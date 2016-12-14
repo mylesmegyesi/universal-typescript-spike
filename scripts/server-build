@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+source $(dirname $0)/util/base.sh
+
+TSC_PATH=$(npm_which "tsc")
+
+echo_run $TSC_PATH --project "$CONFIG_DIR/tsconfig.server.json"

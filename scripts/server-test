@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+source $(dirname $0)/util/base.sh
+
+TS_NODE_PATH=$(npm_which "ts-node")
+MOCHA_PATH=$(npm_which "mocha")
+
+echo_run export TS_NODE_CACHE=true
+echo_run export TS_NODE_PROJECT=$ROOT_DIR/config/tsconfig.node.json
+echo_run $MOCHA_PATH --colors --no-exit --compilers ts:ts-node/register,tsx:ts-node/register $TEST_DIR/server/**/*Spec.ts --reporter mocha-minimalist-reporter

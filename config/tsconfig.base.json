@@ -1,0 +1,64 @@
+{
+  "compilerOptions": {
+    "allowJs": false,
+    "allowSyntheticDefaultImports": false,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "alwaysStrict": true,
+    "baseUrl": ".",
+    "charset": "utf8",
+    // "declaration": false, Output is configured externally
+    // "declarationDir": null, File paths are configured externally
+    "diagnostics": false,
+    "disableSizeLimit": false,
+    "emitBOM": false,
+    "emitDecoratorMetadata": false,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+    "importHelpers": false,
+    // "inlineSourceMap": false, Source maps are configured externally
+    // "inlineSources": false, Source maps are configured externally
+    "isolatedModules": false,
+    "jsx": "react",
+    "lib": ["dom", "es7"],
+    "listEmittedFiles": false,
+    "listFiles": false,
+    // "locale": "en-us", Omitted to give precedence to local machine settings
+    // "mapRoot":	null, File paths are configured externally
+    "maxNodeModuleJsDepth": 0,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "newLine": "lf",
+    // "noEmit": false, Output is configured externally
+    "noEmitHelpers": false,
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitUseStrict": false,
+    "noLib": false,
+    "noResolve": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    // "outDir": null, // Output is configured externally
+    // "outFile":	null, Output is configured externally
+    // "paths": [], File paths are configured externally
+    "preserveConstEnums": false,
+    "pretty":	false,
+    "reactNamespace": "React",
+    "removeComments": false,
+    // "rootDir": null, // File paths are configured externally
+    // "rootDirs": [], File paths are configured externally
+    "skipDefaultLibCheck": false,
+    "skipLibCheck": false,
+    // "sourceMap" false, Source maps are configured externally
+    // "sourceRoot": null, File paths are configured externally
+    "strictNullChecks": true,
+    "stripInternal": false,
+    "suppressExcessPropertyErrors": false,
+    "suppressImplicitAnyIndexErrors": false,
+    "traceResolution": false
+    // "types": [], File paths are configured externally
+    // "typeRoots": [], File paths are configured externally
+  }
+}
