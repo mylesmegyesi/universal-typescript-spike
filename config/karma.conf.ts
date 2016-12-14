@@ -22,10 +22,8 @@ module.exports = (config: KarmaConfig) => {
     ],
     frameworks: ["mocha"],
     preprocessors: {
-      "test/client/**/*Spec.ts": ["webpack", "sourcemap"
-      ],
-      "test/client/**/*Spec.tsx": ["webpack", "sourcemap"
-      ]
+      "test/client/**/*Spec.ts": ["webpack", "sourcemap"],
+      "test/client/**/*Spec.tsx": ["webpack", "sourcemap"]
     },
     mochaReporter: {
       showDiff: true,
@@ -33,9 +31,9 @@ module.exports = (config: KarmaConfig) => {
     },
     webpackMiddleware: { noInfo: true },
     webpack: {
-      debug: false,
+      debug: true,
       bail: true,
-      devtool: "inline-source-map",
+      devtool: "source-map",
       resolve: {
         extensions: ["", ".ts", ".tsx", ".js"]
       },

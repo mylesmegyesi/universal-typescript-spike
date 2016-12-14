@@ -1,4 +1,5 @@
 import * as http from "http";
+import * as url from "url";
 
 import * as Express from "express";
 import * as React from "react";
@@ -8,35 +9,41 @@ import { Application, ApplicationProps } from "../client/Application";
 import { ClientConfig } from "../client/ClientConfig";
 import { ApplicationWebPage, ApplicationWebPageProps } from "./ApplicationWebPage";
 
-export function configureApplication(app: Express.Application): void {
-  app.get("/", (_, response) => {
+export type ApplicationWebPageMiddlewareConfig = {
+  clientMainModuleName: string;
+  clientAssetsBaseUrl: string;
+  mainScriptName: string;
+}
+
+export function buildApplicationWebPageMiddleware(config: ApplicationWebPageMiddlewareConfig): Express.Handler {
+  return (request: Express.Request, response: Express.Response, next: Express.NextFunction) => {
     response.set("Content-Type", "text/html; charset=utf-8");
     const applicationProps: ApplicationProps = {
       postfix: "World",
       count: 1001,
     };
     const clientConfig: ClientConfig = {
-      applicationContainerId: "application-container",
+      applicationContainerId: "app-root",
       applicationProps: applicationProps,
     };
-    const clientMainModuleName = "application";
     const clientConfigJson = JSON.stringify(clientConfig);
-    const onloadCallback = `window[\"${clientMainModuleName}\"][\"main\"](${clientConfigJson})`;
+    const onloadCallback = `window[\"${config.clientMainModuleName}\"][\"main\"](${clientConfigJson})`;
     const applicationWebPageProps: ApplicationWebPageProps = {
       title: "Page Title",
-      clientScriptTagSrc: "application.js",
+      baseUrl: config.clientAssetsBaseUrl,
+      clientScriptTagSrc: config.mainScriptName,
       clientScriptTagOnLoadCallback: onloadCallback,
       applicationContainerId: clientConfig.applicationContainerId,
       applicationProps: applicationProps,
     };
     const webPageElement = React.createElement(ApplicationWebPage, applicationWebPageProps);
     response.send(`<!DOCTYPE html>${renderToStaticMarkup(webPageElement)}`);
-  });
+  };
 }
 
 export function buildApplication(): Express.Application {
   const app = Express();
-  configureApplication(app);
+  // configureApplication(app);
   return app;
 }
 

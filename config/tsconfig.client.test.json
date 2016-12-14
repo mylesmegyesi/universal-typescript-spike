@@ -1,9 +1,5 @@
 {
   "extends": "./tsconfig.client.json",
-  "compilerOptions": {
-    "inlineSourceMap": true,
-    "inlineSources": true
-  },
   "include": [
     "../test/client/**/*.ts",
     "../test/client/**/*.tsx"

@@ -4,6 +4,7 @@ import { renderToString } from "react-dom/server";
 import { Application, ApplicationProps } from "../client/Application";
 
 export type ApplicationWebPageProps = {
+  baseUrl: string;
   title: string;
   clientScriptTagSrc: string;
   clientScriptTagOnLoadCallback: string;
@@ -14,7 +15,8 @@ export type ApplicationWebPageProps = {
 export const ApplicationWebPage = (props: ApplicationWebPageProps) =>
   <html>
     <head>
-      <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" ></meta>
+      <base href={props.baseUrl} target="_self" />
+      <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
       <title>{props.title}</title>
     </head>
     <body>
