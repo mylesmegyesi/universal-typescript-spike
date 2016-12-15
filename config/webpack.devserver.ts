@@ -2,7 +2,8 @@ import * as path from "path";
 import * as url from "url";
 import * as webpack from "webpack";
 import * as Express from "express";
-import { buildApplicationWebPageMiddleware } from "../src/server/Main";
+import { buildOriginClientAssetBaseUrl } from "../src/server/Main";
+import { buildApplicationWebPageMiddleware } from "../src/server/ApplicationWebPageMiddleware";
 
 const root = path.join(__dirname, "..");
 
@@ -11,7 +12,6 @@ const CLIENT_MAIN_MODULE_NAME = "application";
 const ASSETS_MOUNT_PATH = "/";
 
 class CompilationInspectorPlugin {
-  public applicationJs: string | null = null;
   public compilation: any | null = null;
 
   public apply(compiler: any) {
@@ -23,14 +23,21 @@ class CompilationInspectorPlugin {
 }
 const compilationInspectorPlugin = new CompilationInspectorPlugin();
 
-function getCompiledMainScriptName(): Promise<string> {
+function setImmediateAsync<T>(fn: () => PromiseLike<T> | T): Promise<T> {
+  return new Promise((resolve) => setImmediate(() => resolve(fn())));
+}
+
+async function getCompilationResult(): Promise<string> {
   if (!compilationInspectorPlugin.compilation) {
-    return new Promise((resolve) => {
-      setImmediate(() => {
-        resolve(getCompiledMainScriptName());
-      });
-    });
+    return await setImmediateAsync(() => getCompilationResult());
   }
+
+  return compilationInspectorPlugin.compilation;
+}
+
+async function getCompiledMainScriptName(): Promise<string> {
+  const compilation = await getCompilationResult();
+
   const foundMainScript = Object.keys(compilationInspectorPlugin.compilation.assets).find((filename) => {
     return filename.startsWith(CLIENT_MAIN_SCRIPT_BASE_NAME) && path.extname(filename) === ".js";
   });
@@ -39,7 +46,7 @@ function getCompiledMainScriptName(): Promise<string> {
     throw new Error(`Could not find client main script ("${CLIENT_MAIN_SCRIPT_BASE_NAME}") in Webpack compilation result`);
   }
 
-  return Promise.resolve(foundMainScript);
+  return foundMainScript;
 }
 
 module.exports = {
@@ -81,23 +88,11 @@ module.exports = {
     inline: false,
     publicPath: ASSETS_MOUNT_PATH,
     setup: (app: Express.Application) => {
-      app.use(async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-        const mainScriptName = await getCompiledMainScriptName();
-
-        const serverApp = Express();
-
-        const host = `${req.protocol}://${req.headers["host"]}/`;
-        const serverBaseUrl = url.resolve(host, req.baseUrl + "/");
-        const assetsBaseUrl = url.resolve(serverBaseUrl, ASSETS_MOUNT_PATH);
-
-        serverApp.get("/", buildApplicationWebPageMiddleware({
-          clientMainModuleName: CLIENT_MAIN_MODULE_NAME,
-          clientAssetsBaseUrl: assetsBaseUrl,
-          mainScriptName: mainScriptName,
-        }));
-
-        serverApp(req, res, next);
-      });
+      app.get("/", buildApplicationWebPageMiddleware({
+        mainScriptName: getCompiledMainScriptName,
+        clientMainModuleName: CLIENT_MAIN_MODULE_NAME,
+        clientAssetsBaseUrl: (_req) => buildOriginClientAssetBaseUrl(_req, ASSETS_MOUNT_PATH),
+      }));
     },
   },
 };

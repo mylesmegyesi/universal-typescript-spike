@@ -7,4 +7,4 @@ WEBPACK_DEV_SERVER_PATH=$(npm_which "webpack-dev-server")
 SERVE_COMMAND="$WEBPACK_DEV_SERVER_PATH --config $CONFIG_DIR/webpack.devserver.ts"
 
 echo_run export TS_NODE_PROJECT="$ROOT_DIR/config/tsconfig.node.json"
-echo_run $ONCHANGE_PATH "$SOURCE_DIR/**/*.ts" "$SOURCE_DIR/**/*.tsx" "$CONFIG_DIR/**/*" "$CONFIG_DIR/**/*" --initial --wait --verbose -- $SERVE_COMMAND
+echo_run $ONCHANGE_PATH "$SOURCE_DIR/**/*.ts" "$SOURCE_DIR/**/*.tsx" "$CONFIG_DIR/**/*" --initial --wait --verbose -- $SERVE_COMMAND

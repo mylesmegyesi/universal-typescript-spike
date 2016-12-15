@@ -1,137 +1,174 @@
 import * as http from "http";
+import * as fs from "fs";
+import * as path from "path";
 import * as url from "url";
 
 import * as Express from "express";
-import * as React from "react";
-import { renderToString, renderToStaticMarkup } from "react-dom/server";
+import * as minimist from "minimist";
 
-import { Application, ApplicationProps } from "../client/Application";
-import { ClientConfig } from "../client/ClientConfig";
-import { ApplicationWebPage, ApplicationWebPageProps } from "./ApplicationWebPage";
+import { buildApplicationWebPageMiddleware } from "./ApplicationWebPageMiddleware";
 
-export type ApplicationWebPageMiddlewareConfig = {
-  clientMainModuleName: string;
-  clientAssetsBaseUrl: string;
+export function buildOriginClientAssetBaseUrl(req: Express.Request, assetsMountPath: string): string {
+  const host = `${req.protocol}://${req.headers["host"]}/`;
+  const serverBaseUrl = url.resolve(host, req.baseUrl + "/");
+  return url.resolve(serverBaseUrl, assetsMountPath);
+}
+
+export type ClientManifest = {
   mainScriptName: string;
+  clientMainModuleName: string;
+  publicDirectoryPath: string;
 }
 
-export function buildApplicationWebPageMiddleware(config: ApplicationWebPageMiddlewareConfig): Express.Handler {
-  return (request: Express.Request, response: Express.Response, next: Express.NextFunction) => {
-    response.set("Content-Type", "text/html; charset=utf-8");
-    const applicationProps: ApplicationProps = {
-      postfix: "World",
-      count: 1001,
-    };
-    const clientConfig: ClientConfig = {
-      applicationContainerId: "app-root",
-      applicationProps: applicationProps,
-    };
-    const clientConfigJson = JSON.stringify(clientConfig);
-    const onloadCallback = `window[\"${config.clientMainModuleName}\"][\"main\"](${clientConfigJson})`;
-    const applicationWebPageProps: ApplicationWebPageProps = {
-      title: "Page Title",
-      baseUrl: config.clientAssetsBaseUrl,
-      clientScriptTagSrc: config.mainScriptName,
-      clientScriptTagOnLoadCallback: onloadCallback,
-      applicationContainerId: clientConfig.applicationContainerId,
-      applicationProps: applicationProps,
-    };
-    const webPageElement = React.createElement(ApplicationWebPage, applicationWebPageProps);
-    response.send(`<!DOCTYPE html>${renderToStaticMarkup(webPageElement)}`);
-  };
+function readManifest(bundle: string) {
+  const manifestPath = path.join(bundle, "manifest.json");
+  const rawManifest = fs.readFileSync(manifestPath, { encoding: "utf8" })
+  return JSON.parse(rawManifest) as ClientManifest;
 }
 
-export function buildApplication(): Express.Application {
+function buildApplication(assetsMountPath: string, bundle: string, keepAlive: boolean): Express.Application {
+  const manifest = readManifest(bundle);
+
   const app = Express();
-  // configureApplication(app);
+
+  app.set("case sensitive routing", false);
+  app.set("strict routing", false);
+  app.set("x-powered-by", false);
+
+  const connectionHeaderValue = keepAlive ? "keep-alive" : "close";
+  app.use((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+    res.setHeader("Connection", connectionHeaderValue);
+    next();
+  });
+
+  app.use(assetsMountPath, Express.static(path.join(bundle, manifest.publicDirectoryPath)));
+
+  const mainScriptNamePromise = Promise.resolve(manifest.mainScriptName);
+  app.use(buildApplicationWebPageMiddleware({
+    mainScriptName: () => mainScriptNamePromise,
+    clientMainModuleName: manifest.clientMainModuleName,
+    clientAssetsBaseUrl: (req) => buildOriginClientAssetBaseUrl(req, assetsMountPath),
+  }));
+
   return app;
 }
 
-type ShutdownResult = {
-  closePromise: Promise<void>;
-  numberOfOpenConnections: number;
+type ServerListeningState = {
+  shutdown(): Promise<ServerShuttingDownState>;
 }
 
-function listen(app: Express.Application, port: number): Promise<() => Promise<ShutdownResult>> {
-  return new Promise((resolveListenPromise) => {
-    let server: http.Server;
-    server = app.listen(port, () => {
-      server.addListener("connection", (socket) => {
-        socket.setKeepAlive(false);
-      });
+type ServerShuttingDownState = {
+  remainingOpenConnections: number;
+  doneShuttingDownPromise: Promise<void>;
+}
 
-      const shutdownServer = () => {
-        let closed = false;
-        server.close(() => {
-          closed = true;
-        });
-        const closePromise = new Promise((resolveClosePromise) => {
-          if (closed) {
-            resolveClosePromise();
-          }
-          server.on("close", () => {
-            resolveClosePromise();
-          });
-        });
+type ServerStarter = (app: Express.Application, port: number, socketTimeout: number) => Promise<ServerListeningState>;
 
-        return new Promise((resolveShutdownPromise, rejectShutdownPromise) => {
-          server.getConnections((err, count) => {
-            if (err) {
-              rejectShutdownPromise(err);
-            } else {
-              resolveShutdownPromise({
-                numberOfOpenConnections: count,
-                closePromise: closePromise,
-              });
-            }
-          });
-        });
-      };
+const startServer: ServerStarter = async (app: Express.Application, port: number, socketTimeout: number): Promise<ServerListeningState> => {
+  const wrapperApp = Express();
 
-      resolveListenPromise(shutdownServer);
+  wrapperApp.use(app);
+
+  const server = http.createServer(wrapperApp);
+  server.addListener("connection", (socket) => {
+    socket.setTimeout(socketTimeout);
+  });
+
+  const getOpenConnections = (): Promise<number> => {
+    return new Promise((resolve) => {
+      server.getConnections((err, count) => resolve(count));
     });
+  }
+
+  const closeServer = (): Promise<void> => {
+    return new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+
+  const safeShutdownServer = async (): Promise<ServerShuttingDownState> => {
+    return {
+      remainingOpenConnections: await getOpenConnections(),
+      doneShuttingDownPromise: closeServer(),
+    };
+  }
+
+  const start = (): Promise<void> => {
+    return new Promise<void>((resolve) => {
+      server.listen(port, () => resolve());
+    });
+  }
+
+  await start();
+
+  return {
+    shutdown: safeShutdownServer,
+  };
+}
+
+async function listenForProcessInteruptSignal(_process: NodeJS.Process): Promise<string> {
+  return new Promise<string>((resolve) => {
+    _process.on("SIGINT", () => resolve("SIGINT"));
   });
 }
 
-async function run(port: number): Promise<void> {
-  const app = buildApplication();
-  const shutdown = await listen(app, port);
+async function listenForProcessTerminateSignal(_process: NodeJS.Process): Promise<string> {
+  return new Promise<string>((resolve) => {
+    _process.on("SIGTERM", () => resolve("SIGINT"));
+  });
+}
+
+async function startAndSafelyShutdownOnProcessSignal(_process: NodeJS.Process, app: Express.Application, port: number, socketTimeout: number, startServer: ServerStarter): Promise<void> {
+  const serverListeningState = await startServer(app, port, socketTimeout);
 
   console.log(`Server started; Port=${port} PID=${process.pid}`);
 
-  let shuttingDownServer = false;
-
-  const handleSignalAndSafeShutdown = (signal: string): Promise<void> => {
-    return new Promise<void>((resolve) => {
-      process.on(signal, async () => {
-        if (shuttingDownServer) {
-          console.log(`Received ${signal}; shutdown already in progress`);
-        } else {
-          shuttingDownServer = true;
-          const shutdownResult = await shutdown();
-          if (shutdownResult.numberOfOpenConnections > 0) {
-            console.log(`Received ${signal}; waiting for open ${shutdownResult.numberOfOpenConnections} connections to close before exiting`);
-          } else {
-            console.log(`Received ${signal}; shutting down server`);
-          }
-          await shutdownResult.closePromise;
-          console.log("Server stopped; all requests complete and connections closed");
-          resolve();
-        }
-      });
-    });
-  };
-
-  return Promise.race([
-    handleSignalAndSafeShutdown("SIGINT"),
-    handleSignalAndSafeShutdown("SIGTERM")
+  const receivedSignal = await Promise.race([
+    listenForProcessInteruptSignal(_process),
+    listenForProcessTerminateSignal(_process)
   ]);
+
+  const serverShuttingDownState = await serverListeningState.shutdown();
+  const remainingOpenConnections = serverShuttingDownState.remainingOpenConnections;
+
+  if (remainingOpenConnections > 0) {
+    console.log(`Received ${receivedSignal}; waiting for open ${remainingOpenConnections} connections to close before exiting`);
+  } else {
+    console.log(`Received ${receivedSignal}; shutting down server`);
+  }
+
+  await serverShuttingDownState.doneShuttingDownPromise;
+
+  console.log("Server stopped; all requests complete and connections closed");
+}
+
+export type ServerConfig = {
+  assetsMountPath: string; // "/assets/",
+  bundlePath: string; // "/path/to/bundle/directory"
+  keepAlive: boolean; // Enable HTTP Persistent Connections
+  port: number;
+  socketTimeout: number;
+}
+
+export function parseArgs(args: string[]): ServerConfig {
+  const parsedArgs = minimist(args);
+
+  return {
+    assetsMountPath: "/",
+    bundlePath: parsedArgs["bundle"],
+    port: parseInt(parsedArgs["port"], 10),
+    keepAlive: false,
+    socketTimeout: parseInt(parsedArgs["socketTimeout"], 10),
+  }
+}
+
+export async function run(_process: NodeJS.Process, config: ServerConfig): Promise<void> {
+  const app = buildApplication(config.assetsMountPath, config.bundlePath, config.keepAlive);
+  await startAndSafelyShutdownOnProcessSignal(_process, app, config.port, config.socketTimeout, startServer);
 }
 
 export async function main(args: string[]): Promise<number> {
-  const port = parseInt(args[2], 10);
   try {
-    await run(port);
+    const config = parseArgs(args);
+    await run(process, config);
     return 0;
   } catch(e) {
     console.error(e);

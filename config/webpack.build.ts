@@ -1,7 +1,50 @@
 import * as path from "path";
 import * as webpack from "webpack";
+import { ClientManifest } from "../src/server/Main";
 
 const root = path.join(__dirname, "..");
+
+const CLIENT_MAIN_SCRIPT_BASE_NAME = "application";
+const CLIENT_MAIN_MODULE_NAME = "application";
+
+class ManifestPlugin {
+  private publicDirectoryPath: string = "public";
+
+  public apply(compiler: any) {
+    compiler.plugin("emit", (compilation: any, done: () => void) => {
+      const mainScriptName = Object.keys(compilation.assets).find((filename) => {
+        return filename.startsWith(CLIENT_MAIN_SCRIPT_BASE_NAME) && path.extname(filename) === ".js";
+      });
+
+      if (!mainScriptName) {
+        throw new Error(`Could not find main script: ${CLIENT_MAIN_SCRIPT_BASE_NAME}`);
+      }
+
+      const manifest: ClientManifest = {
+        mainScriptName: mainScriptName,
+        clientMainModuleName: CLIENT_MAIN_MODULE_NAME,
+        publicDirectoryPath: this.publicDirectoryPath,
+      }
+      const replacer = null;
+      const prettyPrint = 2;
+      const manifestJson = JSON.stringify(manifest, replacer, prettyPrint);
+
+      Object.keys(compilation.assets).forEach((filename) => {
+        const newFilePath = path.join(this.publicDirectoryPath, filename);
+        const fileContents = compilation.assets[filename];
+        compilation.assets[newFilePath] = fileContents;
+        delete compilation.assets[filename];
+      });
+
+      compilation.assets["manifest.json"] = {
+        source: () => manifestJson,
+          size: () => manifestJson.length
+      };
+
+      done();
+    })
+  }
+}
 
 module.exports = {
   entry: path.join(root, "src", "client", "Main.ts"),
@@ -17,7 +60,8 @@ module.exports = {
     }),
     new webpack.optimize.DedupePlugin(),
     new webpack.optimize.OccurrenceOrderPlugin(true),
-    new webpack.optimize.UglifyJsPlugin({compress: { warnings: false }})
+    new webpack.optimize.UglifyJsPlugin({compress: { warnings: false }}),
+    new ManifestPlugin()
   ],
   resolve: {
     root: root,
@@ -33,9 +77,8 @@ module.exports = {
     ]
   },
   output: {
-    filename: "application-[hash].js",
-    path: path.join(root, "out", "bundle"),
-    library: "application",
+    filename: `${CLIENT_MAIN_SCRIPT_BASE_NAME}-[hash].js`,
+    library: CLIENT_MAIN_MODULE_NAME,
     libraryTarget: "this",
   },
   ts: {
