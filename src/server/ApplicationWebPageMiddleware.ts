@@ -8,6 +8,7 @@ import { Application, ApplicationProps } from "../client/Application";
 
 export type ApplicationWebPageMiddlewareConfig = {
   mainScriptName: () => Promise<string>;
+  mainCssName: () => Promise<string>;
   clientMainModuleName: string;
   clientAssetsBaseUrl: (req: Express.Request) => string;
 }
@@ -29,6 +30,7 @@ export function buildApplicationWebPageMiddleware(config: ApplicationWebPageMidd
     const applicationWebPageProps: ApplicationWebPageProps = {
       title: "Page Title",
       baseUrl: config.clientAssetsBaseUrl(request),
+      clientCssSrc: await config.mainCssName(),
       clientScriptTagSrc: await config.mainScriptName(),
       clientScriptTagOnLoadCallback: `window[\"${config.clientMainModuleName}\"][\"main\"](${JSON.stringify(clientConfig)})`,
       applicationContainerId: clientConfig.applicationContainerId,

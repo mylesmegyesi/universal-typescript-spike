@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as url from "url";
 import * as webpack from "webpack";
+import * as ExtractTextPlugin from "extract-text-webpack-plugin";
 import * as Express from "express";
 import { buildOriginClientAssetBaseUrl } from "../src/server/Main";
 import { buildApplicationWebPageMiddleware } from "../src/server/ApplicationWebPageMiddleware";
@@ -49,6 +50,20 @@ async function getCompiledMainScriptName(): Promise<string> {
   return foundMainScript;
 }
 
+async function getCompiledCssName(): Promise<string> {
+  const compilation = await getCompilationResult();
+
+  const foundCss = Object.keys(compilationInspectorPlugin.compilation.assets).find((filename) => {
+    return filename.startsWith(CLIENT_MAIN_SCRIPT_BASE_NAME) && path.extname(filename) === ".css";
+  });
+
+  if (!foundCss) {
+    throw new Error(`Could not find client css ("${CLIENT_MAIN_SCRIPT_BASE_NAME}") in Webpack compilation result`);
+  }
+
+  return foundCss;
+}
+
 module.exports = {
   entry: path.join(root, "src", "client", "Main.ts"),
   debug: true,
@@ -60,16 +75,22 @@ module.exports = {
   },
   module: {
     loaders: [
-      { test: /\.tsx?$/, loader: "ts-loader" }
+      { test: /\.tsx?$/, loader: "ts-loader" },
+      { test: /\.scss$/,
+        loader: (ExtractTextPlugin as any).extract('style-loader?sourceMap', 'css-loader?sourceMap!sass-loader?sourceMap')
+      },
     ]
   },
   plugins: [
     compilationInspectorPlugin,
+    new ExtractTextPlugin("application-[contenthash].css"),
   ],
   output: {
     filename: `${CLIENT_MAIN_SCRIPT_BASE_NAME}-[hash].js`,
     library: CLIENT_MAIN_MODULE_NAME,
     libraryTarget: "this",
+  },
+  sassLoader: {
   },
   ts: {
     configFileName: require.resolve("./tsconfig.client.json"),
@@ -90,6 +111,7 @@ module.exports = {
     setup: (app: Express.Application) => {
       app.get("/", buildApplicationWebPageMiddleware({
         mainScriptName: getCompiledMainScriptName,
+        mainCssName: getCompiledCssName,
         clientMainModuleName: CLIENT_MAIN_MODULE_NAME,
         clientAssetsBaseUrl: (_req) => buildOriginClientAssetBaseUrl(_req, ASSETS_MOUNT_PATH),
       }));

@@ -17,29 +17,34 @@ export function buildOriginClientAssetBaseUrl(req: Express.Request, assetsMountP
 
 export type ClientManifest = {
   mainScriptName: string;
+  mainCssName: string;
   clientMainModuleName: string;
   publicDirectoryPath: string;
 }
 
 const clientManifestJsonSchema = {
-	"$schema": "http://json-schema.org/draft-04/schema#",
-	"type": "object",
-	"properties": {
-		"mainScriptName": {
-			"type": "string",
-		},
-		"clientMainModuleName": {
-			"type": "string",
-		},
-		"publicDirectoryPath": {
-			"type": "string",
-		}
-	},
-	"required": [
-		"mainScriptName",
-		"clientMainModuleName",
-		"publicDirectoryPath",
-	],
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+  	"mainScriptName": {
+  		"type": "string",
+    },
+    "mainCssName": {
+  		"type": "string",
+  	},
+  	"clientMainModuleName": {
+  		"type": "string",
+  	},
+  	"publicDirectoryPath": {
+  		"type": "string",
+  	}
+  },
+  "required": [
+  	"mainScriptName",
+    "mainCssName",
+  	"clientMainModuleName",
+  	"publicDirectoryPath",
+  ],
 };
 
 function readFileAsync(path: string): Promise<string> {
@@ -64,6 +69,7 @@ async function readManifest(bundle: string) {
   if (validationResult.valid) {
     return {
       mainScriptName: parsedManifest["mainScriptName"],
+      mainCssName: parsedManifest["mainCssName"],
       clientMainModuleName: parsedManifest["clientMainModuleName"],
       publicDirectoryPath: parsedManifest["publicDirectoryPath"],
     };
@@ -82,8 +88,10 @@ function buildApplication(manifest: ClientManifest, bundlePath: string, assetsMo
   app.use(assetsMountPath, Express.static(path.join(bundlePath, manifest.publicDirectoryPath)));
 
   const mainScriptNamePromise = Promise.resolve(manifest.mainScriptName);
+  const mainCssNamePromise = Promise.resolve(manifest.mainCssName);
   app.use(buildApplicationWebPageMiddleware({
     mainScriptName: () => mainScriptNamePromise,
+    mainCssName: () => mainCssNamePromise,
     clientMainModuleName: manifest.clientMainModuleName,
     clientAssetsBaseUrl: (req) => buildOriginClientAssetBaseUrl(req, assetsMountPath),
   }));
