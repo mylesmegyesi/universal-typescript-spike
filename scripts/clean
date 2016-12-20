@@ -2,4 +2,5 @@
 
 source $(dirname $0)/util/base.sh
 
-echo_run rm -rf "$OUT_DIR"
+rm -rf $OUT_DIR
+

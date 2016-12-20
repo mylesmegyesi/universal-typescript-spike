@@ -3,6 +3,8 @@
 source $(dirname $0)/util/base.sh
 
 ONCHANGE_PATH=$(npm_which "onchange")
+
 SINGLE_RUN_SCRIPT="$SCRIPTS_DIR/test"
 
-echo_run $ONCHANGE_PATH "$TEST_DIR/**/*.ts" "$TEST_DIR/**/*.tsx" "$SOURCE_DIR/**/*.ts" "$SOURCE_DIR/**/*.tsx" "$CONFIG_DIR/**/*" "$SINGLE_RUN_SCRIPT" --initial --wait --verbose -- $SINGLE_RUN_SCRIPT
+$ONCHANGE_PATH $ALL_TYPESCRIPT_TEST_FILES $ALL_TYPESCRIPT_SOURCE_FILES $ALL_CONFIG_FILES $SINGLE_RUN_SCRIPT --initial --wait --verbose --poll 100 -- $SINGLE_RUN_SCRIPT
+

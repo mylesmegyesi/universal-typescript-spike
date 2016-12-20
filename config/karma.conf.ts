@@ -14,17 +14,19 @@ module.exports = (config: KarmaConfig) => {
   config.set({
     basePath: root,
     failOnEmptyTestSuite: true,
+    singleRun: true,
     browsers: ["PhantomJS"],
     logLevel: logLevel,
     files: [
-      "test/client/**/*Spec.ts",
-      "test/client/**/*Spec.tsx"
+      "spec/client/**/*Spec.ts",
+      "spec/client/**/*Spec.tsx"
     ],
     frameworks: ["mocha"],
     preprocessors: {
-      "test/client/**/*Spec.ts": ["webpack", "sourcemap"],
-      "test/client/**/*Spec.tsx": ["webpack", "sourcemap"]
+      "**/*.ts": ["webpack", "sourcemap"],
+      "**/*.tsx": ["webpack", "sourcemap"]
     },
+    reporters: ["mocha"],
     mochaReporter: {
       showDiff: true,
       output: "minimal",

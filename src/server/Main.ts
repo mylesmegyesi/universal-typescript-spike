@@ -4,7 +4,8 @@ import * as path from "path";
 import * as url from "url";
 
 import * as Express from "express";
-import * as minimist from "minimist";
+import * as jsonschema from "jsonschema";
+import * as yargs from "yargs";
 
 import { buildApplicationWebPageMiddleware } from "./ApplicationWebPageMiddleware";
 
@@ -20,28 +21,65 @@ export type ClientManifest = {
   publicDirectoryPath: string;
 }
 
-function readManifest(bundle: string) {
-  const manifestPath = path.join(bundle, "manifest.json");
-  const rawManifest = fs.readFileSync(manifestPath, { encoding: "utf8" })
-  return JSON.parse(rawManifest) as ClientManifest;
+const clientManifestJsonSchema = {
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"type": "object",
+	"properties": {
+		"mainScriptName": {
+			"type": "string",
+		},
+		"clientMainModuleName": {
+			"type": "string",
+		},
+		"publicDirectoryPath": {
+			"type": "string",
+		}
+	},
+	"required": [
+		"mainScriptName",
+		"clientMainModuleName",
+		"publicDirectoryPath",
+	],
+};
+
+function readFileAsync(path: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    fs.readFile(path, { encoding: "utf8", flag: "r" }, (err, content) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(content);
+      }
+    });
+  });
 }
 
-function buildApplication(assetsMountPath: string, bundle: string, keepAlive: boolean): Express.Application {
-  const manifest = readManifest(bundle);
+async function readManifest(bundle: string) {
+  const manifestPath = path.join(bundle, "manifest.json");
+  const rawManifest = await readFileAsync(manifestPath);
+  const parsedManifest = JSON.parse(rawManifest);
 
+  const validationResult = jsonschema.validate(parsedManifest, clientManifestJsonSchema)
+
+  if (validationResult.valid) {
+    return {
+      mainScriptName: parsedManifest["mainScriptName"],
+      clientMainModuleName: parsedManifest["clientMainModuleName"],
+      publicDirectoryPath: parsedManifest["publicDirectoryPath"],
+    };
+  } else {
+    const errors = validationResult.errors.map((e) => `  * ${e.property} ${e.message}`).join("\n");
+    const errorMessage = `Manifest is invalid -> ${manifestPath}\n${errors}`;
+    throw new Error(errorMessage);
+  }
+}
+
+const ASSETS_MOUNT_PATH = "/assets/"
+
+function buildApplication(manifest: ClientManifest, bundlePath: string, assetsMountPath: string = ASSETS_MOUNT_PATH): Express.Application {
   const app = Express();
 
-  app.set("case sensitive routing", false);
-  app.set("strict routing", false);
-  app.set("x-powered-by", false);
-
-  const connectionHeaderValue = keepAlive ? "keep-alive" : "close";
-  app.use((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-    res.setHeader("Connection", connectionHeaderValue);
-    next();
-  });
-
-  app.use(assetsMountPath, Express.static(path.join(bundle, manifest.publicDirectoryPath)));
+  app.use(assetsMountPath, Express.static(path.join(bundlePath, manifest.publicDirectoryPath)));
 
   const mainScriptNamePromise = Promise.resolve(manifest.mainScriptName);
   app.use(buildApplicationWebPageMiddleware({
@@ -62,10 +100,15 @@ type ServerShuttingDownState = {
   doneShuttingDownPromise: Promise<void>;
 }
 
-type ServerStarter = (app: Express.Application, port: number, socketTimeout: number) => Promise<ServerListeningState>;
-
-const startServer: ServerStarter = async (app: Express.Application, port: number, socketTimeout: number): Promise<ServerListeningState> => {
+async function startServer(app: Express.Application, port: number, keepAlive: boolean, socketTimeout: number): Promise<ServerListeningState> {
   const wrapperApp = Express();
+  wrapperApp.set("x-powered-by", false);
+
+  wrapperApp.use((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+    const connectionHeaderValue = keepAlive ? "keep-alive" : "close";
+    res.setHeader("Connection", connectionHeaderValue);
+    next();
+  });
 
   wrapperApp.use(app);
 
@@ -85,6 +128,7 @@ const startServer: ServerStarter = async (app: Express.Application, port: number
   }
 
   const safeShutdownServer = async (): Promise<ServerShuttingDownState> => {
+    keepAlive = false;
     return {
       remainingOpenConnections: await getOpenConnections(),
       doneShuttingDownPromise: closeServer(),
@@ -104,26 +148,89 @@ const startServer: ServerStarter = async (app: Express.Application, port: number
   };
 }
 
-async function listenForProcessInteruptSignal(_process: NodeJS.Process): Promise<string> {
+export type ServerConfig = {
+  bundlePath: string;
+  keepAlive: boolean;
+  port: number;
+  socketTimeout: number;
+}
+
+export type ParsedArgsResult = ServerConfig | string;
+
+export function isParseArgsResultSuccess(result: ParsedArgsResult): result is ServerConfig {
+  return (typeof result === "object");
+}
+
+export function isParseArgsResultFail(result: ParsedArgsResult): result is string {
+  return (typeof result === "string");
+}
+
+export function parseArgs(args: string[]): ParsedArgsResult {
+  let errorMessage: string | null = null;
+
+  const coerceInteger = (name: string) => {
+    return (rawValue: string) => {
+      const value = parseInt(rawValue, 10);
+      if (isNaN(value)) {
+        throw new Error(`${name} must be an integer`);
+      }
+      return value;
+    }
+  }
+
+  const argv: any = yargs(args)
+    .strict()
+    .option("socketTimeout", {
+      demand: true,
+      describe: "Close open sockets after <timeout> milliseconds of inactivity.",
+      type: "number",
+      coerce: coerceInteger("socketTimeout"),
+    })
+    .option("port", {
+      demand: true,
+      describe: "Port to listen on.",
+      type: "number",
+      coerce: coerceInteger("port"),
+    })
+    .option("keepAlive", {
+      demand: true,
+      describe: "Enable HTTP Persisent Connections.",
+      type: "boolean",
+    })
+    .option("bundlePath", {
+      demand: true,
+      describe: "Path to the compiled Client bundle (i.e. directory where the manifest.json lives).",
+      type: "string",
+    })
+    .fail((msg: string, err: Error, yargs: any) => {
+      errorMessage = `${msg}\n\n${yargs.help()}`;
+    })
+    .argv
+
+  if (errorMessage) {
+    return errorMessage;
+  } else {
+    return argv as ServerConfig;
+  }
+}
+
+async function listenForProcessSignal(_process: NodeJS.Process, signal: string): Promise<string> {
   return new Promise<string>((resolve) => {
-    _process.on("SIGINT", () => resolve("SIGINT"));
+    _process.on(signal, () => resolve(signal));
   });
 }
 
-async function listenForProcessTerminateSignal(_process: NodeJS.Process): Promise<string> {
-  return new Promise<string>((resolve) => {
-    _process.on("SIGTERM", () => resolve("SIGINT"));
-  });
-}
+export async function run(config: ServerConfig): Promise<void> {
+  const manifest = await readManifest(config.bundlePath);
+  const app = buildApplication(manifest, config.bundlePath);
 
-async function startAndSafelyShutdownOnProcessSignal(_process: NodeJS.Process, app: Express.Application, port: number, socketTimeout: number, startServer: ServerStarter): Promise<void> {
-  const serverListeningState = await startServer(app, port, socketTimeout);
+  const serverListeningState = await startServer(app, config.port, config.keepAlive, config.socketTimeout);
 
-  console.log(`Server started; Port=${port} PID=${process.pid}`);
+  console.log(`Server started; Port=${config.port} PID=${process.pid}`);
 
   const receivedSignal = await Promise.race([
-    listenForProcessInteruptSignal(_process),
-    listenForProcessTerminateSignal(_process)
+    listenForProcessSignal(process, "SIGINT"),
+    listenForProcessSignal(process, "SIGTERM")
   ]);
 
   const serverShuttingDownState = await serverListeningState.shutdown();
@@ -140,38 +247,22 @@ async function startAndSafelyShutdownOnProcessSignal(_process: NodeJS.Process, a
   console.log("Server stopped; all requests complete and connections closed");
 }
 
-export type ServerConfig = {
-  assetsMountPath: string; // "/assets/",
-  bundlePath: string; // "/path/to/bundle/directory"
-  keepAlive: boolean; // Enable HTTP Persistent Connections
-  port: number;
-  socketTimeout: number;
-}
-
-export function parseArgs(args: string[]): ServerConfig {
-  const parsedArgs = minimist(args);
-
-  return {
-    assetsMountPath: "/",
-    bundlePath: parsedArgs["bundle"],
-    port: parseInt(parsedArgs["port"], 10),
-    keepAlive: false,
-    socketTimeout: parseInt(parsedArgs["socketTimeout"], 10),
-  }
-}
-
-export async function run(_process: NodeJS.Process, config: ServerConfig): Promise<void> {
-  const app = buildApplication(config.assetsMountPath, config.bundlePath, config.keepAlive);
-  await startAndSafelyShutdownOnProcessSignal(_process, app, config.port, config.socketTimeout, startServer);
-}
-
 export async function main(args: string[]): Promise<number> {
   try {
-    const config = parseArgs(args);
-    await run(process, config);
-    return 0;
+    const result = parseArgs(args);
+    if (isParseArgsResultSuccess(result)) {
+      await run(result);
+      return 0;
+    } else {
+      console.error(result);
+      return 1;
+    }
   } catch(e) {
     console.error(e);
     return 1;
   }
+}
+
+if (require.main === module) {
+  main(process.argv).then((exitCode) => process.exit(exitCode));
 }

@@ -84,7 +84,6 @@
     "no-unsafe-finally": false,
     "no-unused-expression": true,
     "no-unused-new": true,
-    "no-unused-variable": [true, "react", "check-parameters"],
     "no-use-before-declare": true,
     "no-var-keyword": true,
     "radix": true,

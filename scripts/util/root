@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-
-echo $(cd "$(dirname "$0")/../.."; pwd)

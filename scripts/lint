@@ -4,5 +4,5 @@ source $(dirname $0)/util/base.sh
 
 TSLINT_PATH=$(npm_which "tslint")
 
-echo_run $TSLINT_PATH --config "$CONFIG_DIR/tslint.json" --format prose --type-check --project "$CONFIG_DIR/tsconfig.tslint.json"
+$TSLINT_PATH --config "$CONFIG_DIR/tslint.json" --format prose --type-check --project "$CONFIG_DIR/tsconfig.tslint.json"
 

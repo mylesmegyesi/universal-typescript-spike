@@ -6,5 +6,6 @@ ONCHANGE_PATH=$(npm_which "onchange")
 WEBPACK_DEV_SERVER_PATH=$(npm_which "webpack-dev-server")
 SERVE_COMMAND="$WEBPACK_DEV_SERVER_PATH --config $CONFIG_DIR/webpack.devserver.ts"
 
-echo_run export TS_NODE_PROJECT="$ROOT_DIR/config/tsconfig.node.json"
-echo_run $ONCHANGE_PATH "$SOURCE_DIR/**/*.ts" "$SOURCE_DIR/**/*.tsx" "$CONFIG_DIR/**/*" --initial --wait --verbose -- $SERVE_COMMAND
+export TS_NODE_PROJECT="$ROOT_DIR/config/tsconfig.node.json"
+$ONCHANGE_PATH $ALL_TYPESCRIPT_SOURCE_FILES $ALL_CONFIG_FILES --initial --wait --verbose --poll 100 -- $SERVE_COMMAND
+

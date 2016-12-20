@@ -7,8 +7,8 @@
   "repository": "http://example.com",
   "dependencies": {
     "express": "^4.14.0",
+    "jsonschema": "^1.1.1",
     "material-ui": "^0.16.4",
-    "minimist": "^1.2.0",
     "react": "^15.4.1",
     "react-dom": "^15.4.1",
     "react-tap-event-plugin": "^2.0.1",
@@ -24,6 +24,7 @@
     "@types/react-dom": "^0.14.19",
     "@types/webpack": "^2.0.0",
     "@types/webpack-dev-server": "^1.12.5",
+    "@types/yargs": "^6.3.3",
     "chai": "^3.5.0",
     "concurrently": "^3.1.0",
     "karma": "^1.3.0",
@@ -41,6 +42,7 @@
     "tslint": "^4.0.2",
     "typescript": "^2.1.4",
     "webpack": "^1.14.0",
-    "webpack-dev-server": "^1.16.2"
+    "webpack-dev-server": "^1.16.2",
+    "yargs": "^6.5.0"
   }
 }

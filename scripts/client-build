@@ -4,6 +4,6 @@ source $(dirname $0)/util/base.sh
 
 WEBPACK_PATH=$(npm_which "webpack")
 
-echo_run export TS_NODE_PROJECT="$ROOT_DIR/config/tsconfig.node.json"
-echo_run $WEBPACK_PATH --config $CONFIG_DIR/webpack.build.ts --output-path "$CLIENT_OUT_DIR"
+export TS_NODE_PROJECT="$ROOT_DIR/config/tsconfig.node.json"
+$WEBPACK_PATH --config $CONFIG_DIR/webpack.build.ts --output-path $CLIENT_OUT_DIR
 
