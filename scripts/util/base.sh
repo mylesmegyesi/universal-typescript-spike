@@ -13,6 +13,9 @@ CLIENT_OUT_DIR="$OUT_DIR/bundle"
 ALL_TYPESCRIPT_TEST_FILES="$TEST_DIR/**/*.ts $TEST_DIR/**/*.tsx"
 ALL_TYPESCRIPT_SOURCE_FILES="$SOURCE_DIR/**/*.ts $SOURCE_DIR/**/*.tsx"
 ALL_CONFIG_FILES="$CONFIG_DIR/**/*"
+SERVER_TEST_FILES="$TEST_DIR/server/**/*Spec.ts"
+SERVER_SOURCE_FILES="$SOURCE_DIR/server/**/*.ts $SOURCE_DIR/server/**/*.tsx"
+CLIENT_SOURCE_FILES="$SOURCE_DIR/client/**/*.ts $SOURCE_DIR/client/**/*.tsx"
 
 NPM_BIN_PATH="$ROOT_DIR/node_modules/.bin:$PATH"
 

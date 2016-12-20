@@ -5,9 +5,7 @@ source $(dirname $0)/util/base.sh
 TS_NODE_PATH=$(npm_which "ts-node")
 MOCHA_PATH=$(npm_which "mocha")
 
-SERVER_TESTS="$TEST_DIR/server/**/*Spec.ts"
-
 export TS_NODE_CACHE=true
 export TS_NODE_PROJECT="$ROOT_DIR/config/tsconfig.node.json"
-$MOCHA_PATH --colors --no-exit --compilers ts:ts-node/register,tsx:ts-node/register $SERVER_TESTS --reporter mocha-minimalist-reporter
+$MOCHA_PATH --colors --no-exit --compilers ts:ts-node/register,tsx:ts-node/register $SERVER_TEST_FILES --reporter mocha-minimalist-reporter
 

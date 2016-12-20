@@ -2,9 +2,7 @@
 
 source $(dirname $0)/util/base.sh
 
-ONCHANGE_PATH=$(npm_which "onchange")
+CONCURRENTLY_PATH=$(npm_which "concurrently")
 
-SINGLE_RUN_SCRIPT="$SCRIPTS_DIR/test"
-
-$ONCHANGE_PATH $ALL_TYPESCRIPT_TEST_FILES $ALL_TYPESCRIPT_SOURCE_FILES $ALL_CONFIG_FILES $SINGLE_RUN_SCRIPT --initial --wait --verbose --poll 100 -- $SINGLE_RUN_SCRIPT
+$CONCURRENTLY_PATH --success all --prefix "[{name}]" --prefix-colors magenta,cyan --names client-test-watch,server-test-watch "$SCRIPTS_DIR/client-test-watch" "$SCRIPTS_DIR/server-test-watch"
 

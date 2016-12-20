@@ -14,7 +14,6 @@ module.exports = (config: KarmaConfig) => {
   config.set({
     basePath: root,
     failOnEmptyTestSuite: true,
-    singleRun: true,
     browsers: ["PhantomJS"],
     logLevel: logLevel,
     files: [

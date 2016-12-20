@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+source $(dirname $0)/util/base.sh
+
+ONCHANGE_PATH=$(npm_which "onchange")
+
+SINGLE_RUN_SCRIPT="$SCRIPTS_DIR/server-test"
+
+$ONCHANGE_PATH $SERVER_TEST_FILES $SERVER_SOURCE_FILES $CLIENT_SOURCE_FILES $ALL_CONFIG_FILES $SINGLE_RUN_SCRIPT --initial --wait --verbose --poll 100 -- $SINGLE_RUN_SCRIPT
+
