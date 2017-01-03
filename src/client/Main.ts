@@ -4,7 +4,7 @@ import { render } from "react-dom";
 import { Application } from "./Application";
 import { ClientConfig } from "./ClientConfig";
 
-require('./css/stylesheets/main.scss');
+require('./css/main.scss');
 
 export function main(config: ClientConfig) {
   render(
