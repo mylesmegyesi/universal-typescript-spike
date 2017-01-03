@@ -1,9 +1,0 @@
-#!/usr/bin/env sh
-
-source $(dirname $0)/util/base.sh
-
-KARMA_PATH=$(npm_which "karma")
-
-export TS_NODE_PROJECT="$ROOT_DIR/config/tsconfig.node.json"
-$KARMA_PATH start $ROOT_DIR/config/karma.conf.ts --auto-watch
-

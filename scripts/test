@@ -1,8 +1,0 @@
-#!/usr/bin/env sh
-
-source $(dirname $0)/util/base.sh
-
-CONCURRENTLY_PATH=$(npm_which "concurrently")
-
-$CONCURRENTLY_PATH --success all --prefix "[{name}]" --prefix-colors magenta,cyan --names client-test,server-test "$SCRIPTS_DIR/client-test" "$SCRIPTS_DIR/server-test"
-
