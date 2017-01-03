@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as webpack from "webpack";
+import * as ExtractTextPlugin from "extract-text-webpack-plugin";
 import { ClientManifest } from "../src/server/Main";
 
 const root = path.join(__dirname, "..");
@@ -20,8 +21,18 @@ class ManifestPlugin {
         throw new Error(`Could not find main script: ${CLIENT_MAIN_SCRIPT_BASE_NAME}`);
       }
 
+      const mainCssName = Object.keys(compilation.assets).find((filename) => {
+        return filename.startsWith(CLIENT_MAIN_SCRIPT_BASE_NAME) && path.extname(filename) === ".css";
+      });
+
+      if (!mainCssName) {
+        throw new Error(`Could not find main css: ${CLIENT_MAIN_SCRIPT_BASE_NAME}`);
+      }
+
+
       const manifest: ClientManifest = {
         mainScriptName: mainScriptName,
+        mainCssName: mainCssName,
         clientMainModuleName: CLIENT_MAIN_MODULE_NAME,
         publicDirectoryPath: this.publicDirectoryPath,
       }
@@ -61,6 +72,7 @@ module.exports = {
     new webpack.optimize.DedupePlugin(),
     new webpack.optimize.OccurrenceOrderPlugin(true),
     new webpack.optimize.UglifyJsPlugin({compress: { warnings: false }}),
+    new ExtractTextPlugin("application-[contenthash].css"),
     new ManifestPlugin()
   ],
   resolve: {
@@ -73,8 +85,13 @@ module.exports = {
   },
   module: {
     loaders: [
-      { test: /\.tsx?$/, loader: "ts-loader" }
-    ]
+      { test: /\.tsx?$/, loader: "ts-loader" },
+      { test: /\.scss$/,
+        loader: (ExtractTextPlugin as any).extract('style-loader?sourceMap', 'css-loader?sourceMap!sass-loader?sourceMap')
+      },
+    ],
+  },
+  sassLoader: {
   },
   output: {
     filename: `${CLIENT_MAIN_SCRIPT_BASE_NAME}-[hash].js`,
