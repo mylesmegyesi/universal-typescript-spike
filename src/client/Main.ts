@@ -4,7 +4,7 @@ import { render } from "react-dom";
 import { Application } from "./Application";
 import { ClientConfig } from "./ClientConfig";
 
-require('./css/main.scss');
+require('./assets/css/main.scss');
 
 export function main(config: ClientConfig) {
   render(
@@ -12,4 +12,3 @@ export function main(config: ClientConfig) {
     document.getElementById(config.applicationContainerId)
   );
 }
-
