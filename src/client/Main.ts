@@ -1,8 +1,8 @@
 import { createElement } from "react";
 import { render } from "react-dom";
 
-import { Application } from "./Application";
-import { ClientConfig } from "./ClientConfig";
+import { Application } from "../common/Application";
+import { ClientConfig } from "../common/ClientConfig";
 
 require('./stylesheets/main.scss');
 

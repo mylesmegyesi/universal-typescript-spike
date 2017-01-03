@@ -18,7 +18,9 @@ module.exports = (config: KarmaConfig) => {
     logLevel: logLevel,
     files: [
       "spec/client/**/*Spec.ts",
-      "spec/client/**/*Spec.tsx"
+      "spec/client/**/*Spec.tsx",
+      "spec/common/**/*Spec.ts",
+      "spec/common/**/*Spec.tsx"
     ],
     frameworks: ["mocha"],
     preprocessors: {

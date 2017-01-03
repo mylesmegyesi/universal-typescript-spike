@@ -1,7 +1,7 @@
 import * as React from "react";
 import { renderToString } from "react-dom/server";
 
-import { Application, ApplicationProps } from "../client/Application";
+import { Application, ApplicationProps } from "../common/Application";
 
 export type ApplicationWebPageProps = {
   baseUrl: string;

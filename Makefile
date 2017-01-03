@@ -4,8 +4,8 @@ TEST_DIR            := ./spec
 SOURCE_DIR          := ./src
 CLIENT_OUT_DIR      := $(OUT_DIR)/bundle
 SERVER_OUT_DIR      := $(OUT_DIR)/src
-SERVER_TEST_FILES   := '$(TEST_DIR)/server/**/*Spec.ts'
-SERVER_SOURCE_FILES := '$(SOURCE_DIR)/server/**/*.ts' '$(SOURCE_DIR)/server/**/*.tsx'
+SERVER_TEST_FILES   := '$(TEST_DIR)/server/**/*.ts' '$(TEST_DIR)/server/**/*.tsx $(TEST_DIR)/common/**/*.ts' '$(TEST_DIR)/common/**/*.tsx'
+SERVER_SOURCE_FILES := '$(SOURCE_DIR)/server/**/*.ts' '$(SOURCE_DIR)/server/**/*.tsx $(SOURCE_DIR)/common/**/*.ts' '$(SOURCE_DIR)/common/**/*.tsx'
 CONFIG_FILES        := '$(CONFIG_DIR)/**/*'
 SOURCE_FILES        := '$(SOURCE_DIR)/**/*'
 
@@ -51,7 +51,7 @@ server-test:
 
 .PHONY: server-test-watch
 server-test-watch:
-	TS_NODE_PROJECT=$(NODE_TS_CONFIG) $(ONCHANGE) $(SERVER_TEST_FILES) $(SERVER_SOURCE_FILES) $(CLIENT_SOURCE_FILES) $(CONFIG_FILES) --initial --wait --verbose --poll 100 -- $(_SERVER_TEST)
+	TS_NODE_PROJECT=$(NODE_TS_CONFIG) $(ONCHANGE) $(SERVER_TEST_FILES) $(SERVER_SOURCE_FILES) $(CONFIG_FILES) --initial --wait --verbose --poll 100 -- $(_SERVER_TEST)
 
 .PHONY: build
 build: client-build server-build
