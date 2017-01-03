@@ -7,11 +7,13 @@
   "repository": "http://example.com",
   "dependencies": {
     "express": "^4.14.0",
+    "file-loader": "^0.9.0",
     "jsonschema": "^1.1.1",
     "react": "^15.4.1",
     "react-dom": "^15.4.1",
     "source-map-support": "^0.4.6",
     "tslib": "^1.2.0",
+    "url-loader": "^0.5.7",
     "yargs": "^6.5.0"
   },
   "devDependencies": {
