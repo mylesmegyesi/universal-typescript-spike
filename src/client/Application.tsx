@@ -27,7 +27,6 @@ export class Application extends React.Component<ApplicationProps, ApplicationPr
   }
 
   public render() {
-    return <h1>Hello, {this.state.postfix}! (Tick: {this.state.count})</h1>;
+    return <div><h1>Hello, {this.state.postfix}! (Tick: {this.state.count})</h1><p>Hello, {this.state.postfix}! <em>(Tick: {this.state.count})</em></p></div>;
   }
 }
-
