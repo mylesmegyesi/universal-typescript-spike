@@ -79,6 +79,7 @@ module.exports = {
       { test: /\.scss$/,
         loader: (ExtractTextPlugin as any).extract('style-loader?sourceMap', 'css-loader?sourceMap!sass-loader?sourceMap')
       },
+      { test: /\.(png|woff|woff2|eot|ttf|svg)$/, loader: 'url-loader?limit=100000' }
     ]
   },
   plugins: [
@@ -118,4 +119,3 @@ module.exports = {
     },
   },
 };
-
