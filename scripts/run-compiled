@@ -1,6 +1,0 @@
-#!/usr/bin/env sh
-
-source $(dirname $0)/util/base.sh
-
-node --require source-map-support/register "$SERVER_OUT_DIR/server/Main.js" --bundlePath $CLIENT_OUT_DIR "$@"
-
