@@ -3,8 +3,8 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { ApplicationWebPage, ApplicationWebPageProps } from "./ApplicationWebPage";
-import { ClientConfig } from "../client/ClientConfig";
-import { Application, ApplicationProps } from "../client/Application";
+import { ClientConfig } from "../common/ClientConfig";
+import { Application, ApplicationProps } from "../common/Application";
 
 export type ApplicationWebPageMiddlewareConfig = {
   mainScriptName: () => Promise<string>;

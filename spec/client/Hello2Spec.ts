@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { Application } from "../../src/client/Application";
+import { Application } from "../../src/common/Application";
 
 describe("new things", () => {
   it("works again", () => {
