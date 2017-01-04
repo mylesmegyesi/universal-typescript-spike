@@ -25,20 +25,9 @@
   dependencies:
     "@types/webpack" "*"
 
-"@types/material-ui@^0.16.43":
-  version "0.16.43"
-  resolved "https://registry.yarnpkg.com/@types/material-ui/-/material-ui-0.16.43.tgz#948a7af1155b80b7c501ef48e9bbf9f38ad7063b"
-  dependencies:
-    "@types/react" "*"
-    "@types/react-addons-linked-state-mixin" "*"
-
 "@types/mime@*":
   version "0.0.29"
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-0.0.29.tgz#fbcfd330573b912ef59eeee14602bface630754b"
-
-"@types/minimist@^1.1.29":
-  version "1.1.29"
-  resolved "https://registry.yarnpkg.com/@types/minimist/-/minimist-1.1.29.tgz#91cd01c4f28c18c8a4e621aad803a3608d81cfea"
 
 "@types/mocha@^2.2.33":
   version "2.2.33"
@@ -47,12 +36,6 @@
 "@types/node@*":
   version "6.0.51"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-6.0.51.tgz#84cbf25111516ec9304d0b61469dc0fa9d12ba32"
-
-"@types/react-addons-linked-state-mixin@*":
-  version "0.14.15"
-  resolved "https://registry.yarnpkg.com/@types/react-addons-linked-state-mixin/-/react-addons-linked-state-mixin-0.14.15.tgz#5c0971569d2360c9c2062497dcdef5d4f73a6c94"
-  dependencies:
-    "@types/react" "*"
 
 "@types/react-dom@^0.14.19":
   version "0.14.19"
