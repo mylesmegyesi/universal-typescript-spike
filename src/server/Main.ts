@@ -108,7 +108,9 @@ type ServerShuttingDownState = {
   doneShuttingDownPromise: Promise<void>;
 }
 
-async function startServer(app: Express.Application, port: number, keepAlive: boolean, socketTimeout: number): Promise<ServerListeningState> {
+async function startServer(app: Express.Application, port: number): Promise<ServerListeningState> {
+  let keepAlive = true;
+  const socketTimeout = 5000;
   const wrapperApp = Express();
   wrapperApp.set("x-powered-by", false);
 
@@ -158,9 +160,7 @@ async function startServer(app: Express.Application, port: number, keepAlive: bo
 
 export type ServerConfig = {
   bundlePath: string;
-  keepAlive: boolean;
   port: number;
-  socketTimeout: number;
 }
 
 export type ParsedArgsResult = ServerConfig | string;
@@ -188,22 +188,11 @@ export function parseArgs(args: string[]): ParsedArgsResult {
 
   const argv: any = yargs(args)
     .strict()
-    .option("socketTimeout", {
-      demand: true,
-      describe: "Close open sockets after <timeout> milliseconds of inactivity.",
-      type: "number",
-      coerce: coerceInteger("socketTimeout"),
-    })
     .option("port", {
       demand: true,
       describe: "Port to listen on.",
       type: "number",
       coerce: coerceInteger("port"),
-    })
-    .option("keepAlive", {
-      demand: true,
-      describe: "Enable HTTP Persisent Connections.",
-      type: "boolean",
     })
     .option("bundlePath", {
       demand: true,
@@ -232,7 +221,7 @@ export async function run(config: ServerConfig): Promise<void> {
   const manifest = await readManifest(config.bundlePath);
   const app = buildApplication(manifest, config.bundlePath);
 
-  const serverListeningState = await startServer(app, config.port, config.keepAlive, config.socketTimeout);
+  const serverListeningState = await startServer(app, config.port);
 
   console.log(`Server started; Port=${config.port} PID=${process.pid}`);
 
