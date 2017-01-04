@@ -2,10 +2,11 @@ import * as http from "http";
 import * as fs from "fs";
 import * as path from "path";
 import * as url from "url";
+import * as os from "os";
 
 import * as Express from "express";
 import * as jsonschema from "jsonschema";
-import * as yargs from "yargs";
+import * as minimist from "minimist";
 
 import { buildApplicationWebPageMiddleware } from "./ApplicationWebPageMiddleware";
 
@@ -173,42 +174,45 @@ export function isParseArgsResultFail(result: ParsedArgsResult): result is strin
   return (typeof result === "string");
 }
 
+const usage = `
+Options:
+  --port        Port to listen on. Default 8080.
+  --bundlePath  Required. Path to the compiled Client bundle (i.e. directory where the
+                manifest.json lives).
+`;
+
 export function parseArgs(args: string[]): ParsedArgsResult {
-  let errorMessage: string | null = null;
+  let errorMessages: string[] = [];
+  const parsedArgs = minimist(args, {
+    string: ["port", "bundlePath"],
+    default: {
+      "port": "8080",
+    },
+    stopEarly: false,
+    "--": false,
+  });
 
-  const coerceInteger = (name: string) => {
-    return (rawValue: string) => {
-      const value = parseInt(rawValue, 10);
-      if (isNaN(value)) {
-        throw new Error(`${name} must be an integer`);
-      }
-      return value;
-    }
-  }
-
-  const argv: any = yargs(args)
-    .strict()
-    .option("port", {
-      demand: true,
-      describe: "Port to listen on.",
-      type: "number",
-      coerce: coerceInteger("port"),
-    })
-    .option("bundlePath", {
-      demand: true,
-      describe: "Path to the compiled Client bundle (i.e. directory where the manifest.json lives).",
-      type: "string",
-    })
-    .fail((msg: string, err: Error, yargs: any) => {
-      errorMessage = `${msg}\n\n${yargs.help()}`;
-    })
-    .argv
-
-  if (errorMessage) {
-    return errorMessage;
+  const serverConfig: { [key: string]: any } = {};
+  const rawPort = parsedArgs["port"];
+  const parsedPort: number = parseInt(rawPort, 10);
+  if (isNaN(parsedPort)) {
+    errorMessages.push("--port must be an integer");
   } else {
-    return argv as ServerConfig;
+    serverConfig["port"] = parsedPort;
   }
+
+  const bundlePath = parsedArgs["bundlePath"];
+  if (!bundlePath) {
+    errorMessages.push("--bundlePath is required");
+  } else {
+    serverConfig["bundlePath"] = bundlePath;
+  }
+
+  if (errorMessages.length > 0) {
+    return `${errorMessages.join(os.EOL)}${os.EOL}${usage}`;
+  }
+
+  return serverConfig as ServerConfig;
 }
 
 async function listenForProcessSignal(_process: NodeJS.Process, signal: string): Promise<string> {
