@@ -30,12 +30,16 @@ describe("Main", () => {
       }
     });
 
-    it(`fails when port is missing`, () => {
+    it(`defaults when port is missing`, () => {
       const { "--port": _, ...args } = validArgs;
 
       const result = parseArgs(flatten(args));
 
-      expect(isParseArgsResultFail(result)).to.be.true;
+      if (isParseArgsResultSuccess(result)) {
+        expect(result.port).to.eql(8080);
+      } else {
+        expect("<success>").to.eql(result);
+      }
     });
 
     it(`fails when port is not a number`, () => {
