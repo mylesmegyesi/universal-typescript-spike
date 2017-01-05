@@ -85,6 +85,15 @@ const ASSETS_MOUNT_PATH = "/assets/"
 
 function buildApplication(manifest: ClientManifest, bundlePath: string, assetsMountPath: string = ASSETS_MOUNT_PATH): Express.Application {
   const app = Express();
+  app.disable("x-powered-by");
+
+  app.use((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+    // Disable HTTP persistent connections until we need them.
+    // keep-alive connections introduce a lot of complexity around graceful shutdown
+    // that I'm avoiding for now
+    res.setHeader("Connection", "close");
+    next();
+  });
 
   app.use(assetsMountPath, Express.static(path.join(bundlePath, manifest.publicDirectoryPath)));
 
@@ -100,62 +109,35 @@ function buildApplication(manifest: ClientManifest, bundlePath: string, assetsMo
   return app;
 }
 
-type ServerListeningState = {
-  shutdown(): Promise<ServerShuttingDownState>;
+export type RunningServer = {
+  port: number;
+  shutdown(): Promise<void>;
 }
 
-type ServerShuttingDownState = {
-  remainingOpenConnections: number;
-  doneShuttingDownPromise: Promise<void>;
-}
-
-async function startServer(app: Express.Application, port: number): Promise<ServerListeningState> {
-  let keepAlive = true;
-  const socketTimeout = 5000;
-  const wrapperApp = Express();
-  wrapperApp.set("x-powered-by", false);
-
-  wrapperApp.use((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-    const connectionHeaderValue = keepAlive ? "keep-alive" : "close";
-    res.setHeader("Connection", connectionHeaderValue);
-    next();
-  });
-
-  wrapperApp.use(app);
-
-  const server = http.createServer(wrapperApp);
-  server.addListener("connection", (socket) => {
-    socket.setTimeout(socketTimeout);
-  });
-
-  const getOpenConnections = (): Promise<number> => {
-    return new Promise((resolve) => {
-      server.getConnections((err, count) => resolve(count));
-    });
-  }
+export async function startServer(app: Express.Application, port: number): Promise<RunningServer> {
+  const server = http.createServer(app);
 
   const closeServer = (): Promise<void> => {
     return new Promise<void>((resolve) => server.close(() => resolve()));
   }
 
-  const safeShutdownServer = async (): Promise<ServerShuttingDownState> => {
-    keepAlive = false;
-    return {
-      remainingOpenConnections: await getOpenConnections(),
-      doneShuttingDownPromise: closeServer(),
-    };
-  }
-
-  const start = (): Promise<void> => {
-    return new Promise<void>((resolve) => {
-      server.listen(port, () => resolve());
+  const start = (): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      server.listen(port, (error: any) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(server.address().port)
+        }
+      });
     });
   }
 
-  await start();
+  const actualPort = await start();
 
   return {
-    shutdown: safeShutdownServer,
+    port: actualPort,
+    shutdown: closeServer,
   };
 }
 
@@ -225,25 +207,20 @@ export async function run(config: ServerConfig): Promise<void> {
   const manifest = await readManifest(config.bundlePath);
   const app = buildApplication(manifest, config.bundlePath);
 
-  const serverListeningState = await startServer(app, config.port);
+  const runningServer = await startServer(app, config.port);
 
-  console.log(`Server started; Port=${config.port} PID=${process.pid}`);
+  console.log(`Server started; Port=${runningServer.port} PID=${process.pid}`);
 
   const receivedSignal = await Promise.race([
     listenForProcessSignal(process, "SIGINT"),
     listenForProcessSignal(process, "SIGTERM")
   ]);
 
-  const serverShuttingDownState = await serverListeningState.shutdown();
-  const remainingOpenConnections = serverShuttingDownState.remainingOpenConnections;
+  const shutdownPromise = runningServer.shutdown();
 
-  if (remainingOpenConnections > 0) {
-    console.log(`Received ${receivedSignal}; waiting for open ${remainingOpenConnections} connections to close before exiting`);
-  } else {
-    console.log(`Received ${receivedSignal}; shutting down server`);
-  }
+  console.log(`Received ${receivedSignal}; shutting down server`);
 
-  await serverShuttingDownState.doneShuttingDownPromise;
+  await shutdownPromise;
 
   console.log("Server stopped; all requests complete and connections closed");
 }
