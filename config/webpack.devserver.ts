@@ -1,6 +1,4 @@
 import * as path from "path";
-import * as url from "url";
-import * as webpack from "webpack";
 import * as ExtractTextPlugin from "extract-text-webpack-plugin";
 import * as Express from "express";
 import { buildOriginClientAssetBaseUrl } from "../src/server/Main";
@@ -28,7 +26,7 @@ function setImmediateAsync<T>(fn: () => PromiseLike<T> | T): Promise<T> {
   return new Promise((resolve) => setImmediate(() => resolve(fn())));
 }
 
-async function getCompilationResult(): Promise<string> {
+async function getCompilationResult(): Promise<any> {
   if (!compilationInspectorPlugin.compilation) {
     return await setImmediateAsync(() => getCompilationResult());
   }
@@ -39,7 +37,7 @@ async function getCompilationResult(): Promise<string> {
 async function getCompiledMainScriptName(): Promise<string> {
   const compilation = await getCompilationResult();
 
-  const foundMainScript = Object.keys(compilationInspectorPlugin.compilation.assets).find((filename) => {
+  const foundMainScript = Object.keys(compilation.assets).find((filename) => {
     return filename.startsWith(CLIENT_MAIN_SCRIPT_BASE_NAME) && path.extname(filename) === ".js";
   });
 
@@ -53,7 +51,7 @@ async function getCompiledMainScriptName(): Promise<string> {
 async function getCompiledCssName(): Promise<string> {
   const compilation = await getCompilationResult();
 
-  const foundCss = Object.keys(compilationInspectorPlugin.compilation.assets).find((filename) => {
+  const foundCss = Object.keys(compilation.assets).find((filename) => {
     return filename.startsWith(CLIENT_MAIN_SCRIPT_BASE_NAME) && path.extname(filename) === ".css";
   });
 

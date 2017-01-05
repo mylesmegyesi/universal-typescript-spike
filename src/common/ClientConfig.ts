@@ -1,4 +1,4 @@
-import { Application, ApplicationProps } from "./Application";
+import { ApplicationProps } from "./Application";
 
 export type ClientConfig = {
   applicationContainerId: string;
