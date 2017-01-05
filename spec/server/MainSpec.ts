@@ -1,4 +1,4 @@
-import { expect, assert } from "chai";
+import { expect } from "chai";
 import { parseArgs, isParseArgsResultFail, isParseArgsResultSuccess } from "../../src/server/Main";
 
 describe("Main", () => {

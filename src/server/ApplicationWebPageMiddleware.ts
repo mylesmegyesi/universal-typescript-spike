@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { ApplicationWebPage, ApplicationWebPageProps } from "./ApplicationWebPage";
 import { ClientConfig } from "../common/ClientConfig";
-import { Application, ApplicationProps } from "../common/Application";
+import { ApplicationProps } from "../common/Application";
 
 export type ApplicationWebPageMiddlewareConfig = {
   mainScriptName: () => Promise<string>;
