@@ -2,7 +2,7 @@ import * as path from "path";
 import * as ExtractTextPlugin from "extract-text-webpack-plugin";
 import * as Express from "express";
 import { buildOriginClientAssetBaseUrl } from "../src/server/Main";
-import { buildApplicationWebPageMiddleware } from "../src/server/ApplicationWebPageMiddleware";
+import { buildApplicationWebPageMiddleware } from "../src/server/ApplicationWebPage";
 
 const root = path.join(__dirname, "..");
 

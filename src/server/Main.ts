@@ -8,7 +8,7 @@ import * as Express from "express";
 import * as jsonschema from "jsonschema";
 import * as minimist from "minimist";
 
-import { buildApplicationWebPageMiddleware } from "./ApplicationWebPageMiddleware";
+import { buildApplicationWebPageMiddleware } from "./ApplicationWebPage";
 
 export function buildOriginClientAssetBaseUrl(req: Express.Request, assetsMountPath: string): string {
   const host = `${req.protocol}://${req.headers["host"]}/`;
