@@ -10,58 +10,6 @@ const CLIENT_MAIN_SCRIPT_BASE_NAME = "application";
 const CLIENT_MAIN_MODULE_NAME = "application";
 const ASSETS_MOUNT_PATH = "/";
 
-class CompilationInspectorPlugin {
-  public compilation: any | null = null;
-
-  public apply(compiler: any) {
-    compiler.plugin("emit", (compilation: any, done: () => void) => {
-      this.compilation = compilation;
-      done();
-    })
-  }
-}
-const compilationInspectorPlugin = new CompilationInspectorPlugin();
-
-function setImmediateAsync<T>(fn: () => PromiseLike<T> | T): Promise<T> {
-  return new Promise((resolve) => setImmediate(() => resolve(fn())));
-}
-
-async function getCompilationResult(): Promise<any> {
-  if (!compilationInspectorPlugin.compilation) {
-    return await setImmediateAsync(() => getCompilationResult());
-  }
-
-  return compilationInspectorPlugin.compilation;
-}
-
-async function getCompiledMainScriptName(): Promise<string> {
-  const compilation = await getCompilationResult();
-
-  const foundMainScript = Object.keys(compilation.assets).find((filename) => {
-    return filename.startsWith(CLIENT_MAIN_SCRIPT_BASE_NAME) && path.extname(filename) === ".js";
-  });
-
-  if (!foundMainScript) {
-    throw new Error(`Could not find client main script ("${CLIENT_MAIN_SCRIPT_BASE_NAME}") in Webpack compilation result`);
-  }
-
-  return foundMainScript;
-}
-
-async function getCompiledCssName(): Promise<string> {
-  const compilation = await getCompilationResult();
-
-  const foundCss = Object.keys(compilation.assets).find((filename) => {
-    return filename.startsWith(CLIENT_MAIN_SCRIPT_BASE_NAME) && path.extname(filename) === ".css";
-  });
-
-  if (!foundCss) {
-    throw new Error(`Could not find client css ("${CLIENT_MAIN_SCRIPT_BASE_NAME}") in Webpack compilation result`);
-  }
-
-  return foundCss;
-}
-
 module.exports = {
   entry: path.join(root, "src", "client", "Main.ts"),
   debug: true,
@@ -81,7 +29,6 @@ module.exports = {
     ]
   },
   plugins: [
-    compilationInspectorPlugin,
     new ExtractTextPlugin("application-[contenthash].css"),
   ],
   output: {
@@ -104,16 +51,56 @@ module.exports = {
     quiet: false,
     noInfo: false,
     lazy: false,
+    cache: false,
     stats: "minimal",
     inline: false,
     publicPath: ASSETS_MOUNT_PATH,
-    setup: (app: Express.Application) => {
-      app.get("/", buildApplicationWebPageMiddleware({
-        mainScriptName: getCompiledMainScriptName,
-        mainCssName: getCompiledCssName,
-        clientMainModuleName: CLIENT_MAIN_MODULE_NAME,
-        clientAssetsBaseUrl: (_req) => buildOriginClientAssetBaseUrl(_req, ASSETS_MOUNT_PATH),
-      }));
+    setup: (app: Express.Application, devServer: any) => {
+      function bundleReady(): Promise<any> {
+        return new Promise((resolve) => {
+          devServer.middleware.waitUntilValid(resolve);
+        });
+      }
+
+      function getCompiledMainScriptName(compilation: any): string {
+        const foundMainScript = Object.keys(compilation.assets).find((filename) => {
+          return filename.startsWith(CLIENT_MAIN_SCRIPT_BASE_NAME) && path.extname(filename) === ".js";
+        });
+
+        if (!foundMainScript) {
+          throw new Error(`Could not find client main script ("${CLIENT_MAIN_SCRIPT_BASE_NAME}") in Webpack compilation result`);
+        }
+
+        return foundMainScript;
+      }
+
+      function getCompiledCssName(compilation: any): string {
+        const foundCss = Object.keys(compilation.assets).find((filename) => {
+          return filename.startsWith(CLIENT_MAIN_SCRIPT_BASE_NAME) && path.extname(filename) === ".css";
+        });
+
+        if (!foundCss) {
+          throw new Error(`Could not find client css ("${CLIENT_MAIN_SCRIPT_BASE_NAME}") in Webpack compilation result`);
+        }
+
+        return foundCss;
+      }
+
+      function buildWebPageMiddlewareOptions(compilation: any) {
+        return {
+          mainScriptName: getCompiledMainScriptName(compilation),
+          mainCssName: getCompiledCssName(compilation),
+          clientMainModuleName: CLIENT_MAIN_MODULE_NAME,
+          clientAssetsBaseUrl: (req: Express.Request) => buildOriginClientAssetBaseUrl(req, ASSETS_MOUNT_PATH),
+        };
+      }
+
+      app.get("/", async (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+        const webpackStats = await bundleReady();
+        const middlewareOptions = buildWebPageMiddlewareOptions(webpackStats.compilation);
+        const middleware = buildApplicationWebPageMiddleware(middlewareOptions);
+        middleware(req, res, next);
+      });
     },
   },
 };
