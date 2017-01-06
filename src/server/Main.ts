@@ -8,7 +8,7 @@ import * as Express from "express";
 import * as jsonschema from "jsonschema";
 import * as minimist from "minimist";
 
-import { buildApplicationWebPageMiddleware } from "./ApplicationWebPageMiddleware";
+import { buildApplicationWebPageMiddleware } from "./ApplicationWebPage";
 
 export function buildOriginClientAssetBaseUrl(req: Express.Request, assetsMountPath: string): string {
   const host = `${req.protocol}://${req.headers["host"]}/`;
@@ -97,11 +97,9 @@ function buildApplication(manifest: ClientManifest, bundlePath: string, assetsMo
 
   app.use(assetsMountPath, Express.static(path.join(bundlePath, manifest.publicDirectoryPath)));
 
-  const mainScriptNamePromise = Promise.resolve(manifest.mainScriptName);
-  const mainCssNamePromise = Promise.resolve(manifest.mainCssName);
   app.use(buildApplicationWebPageMiddleware({
-    mainScriptName: () => mainScriptNamePromise,
-    mainCssName: () => mainCssNamePromise,
+    mainScriptName: manifest.mainScriptName,
+    mainCssName: manifest.mainCssName,
     clientMainModuleName: manifest.clientMainModuleName,
     clientAssetsBaseUrl: (req) => buildOriginClientAssetBaseUrl(req, assetsMountPath),
   }));

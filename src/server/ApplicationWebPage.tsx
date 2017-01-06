@@ -1,7 +1,9 @@
+import * as Express from "express";
 import * as React from "react";
-import { renderToString } from "react-dom/server";
+import { renderToString, renderToStaticMarkup } from "react-dom/server";
 
 import { Application, ApplicationProps } from "../common/Application";
+import { ClientConfig } from "../common/ClientConfig";
 
 export type ApplicationWebPageProps = {
   baseUrl: string;
@@ -27,3 +29,40 @@ export const ApplicationWebPage = (props: ApplicationWebPageProps) =>
       <div dangerouslySetInnerHTML={{__html: `<script type="text/javascript" src="${props.clientScriptTagSrc}" onload='${props.clientScriptTagOnLoadCallback}'></script>` }} />
     </body>
   </html>;
+
+export type ApplicationWebPageMiddlewareConfig = {
+  mainScriptName: string;
+  mainCssName: string;
+  clientMainModuleName: string;
+  clientAssetsBaseUrl: (req: Express.Request) => string;
+}
+
+export function buildApplicationWebPageMiddleware(config: ApplicationWebPageMiddlewareConfig): Express.Handler {
+  return async (request: Express.Request, response: Express.Response, next: Express.NextFunction) => {
+    response.set("Content-Type", "text/html; charset=utf-8");
+
+    const applicationProps: ApplicationProps = {
+      postfix: "World",
+      count: 1001,
+    };
+
+    const clientConfig: ClientConfig = {
+      applicationContainerId: "app-root",
+      applicationProps: applicationProps,
+    };
+
+    const applicationWebPageProps: ApplicationWebPageProps = {
+      title: "Page Title",
+      baseUrl: config.clientAssetsBaseUrl(request),
+      clientCssSrc: config.mainCssName,
+      clientScriptTagSrc: config.mainScriptName,
+      clientScriptTagOnLoadCallback: `window[\"${config.clientMainModuleName}\"][\"main\"](${JSON.stringify(clientConfig)})`,
+      applicationContainerId: clientConfig.applicationContainerId,
+      applicationProps: applicationProps,
+    };
+
+    const webPageElement = React.createElement(ApplicationWebPage, applicationWebPageProps);
+    response.send(`<!DOCTYPE html>${renderToStaticMarkup(webPageElement)}`);
+  };
+}
+
