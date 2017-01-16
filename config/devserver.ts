@@ -86,7 +86,6 @@ async function buildClient(): Promise<[ClientManifest, Express.RequestHandler]> 
 
 async function buildAndRun(commandLineArgs: CommandLineArguments): Promise<void> {
   const [manifest, assetsHandler] = await buildClient();
-  console.log(manifest);
   await run({
     manifest: manifest,
     assetsHandler: assetsHandler,
