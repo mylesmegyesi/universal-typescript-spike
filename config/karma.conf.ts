@@ -13,19 +13,19 @@ module.exports = (config: KarmaConfig) => {
   const logLevel = "error";
   config.set({
     basePath: root,
-    failOnEmptyTestSuite: true,
+    failOnEmptyTestSuite: false,
     browsers: ["PhantomJS"],
     logLevel: logLevel,
     files: [
       "spec/client/**/*Spec.ts",
       "spec/client/**/*Spec.tsx",
       "spec/common/**/*Spec.ts",
-      "spec/common/**/*Spec.tsx"
+      "spec/common/**/*Spec.tsx",
     ],
     frameworks: ["mocha"],
     preprocessors: {
       "**/*.ts": ["webpack", "sourcemap"],
-      "**/*.tsx": ["webpack", "sourcemap"]
+      "**/*.tsx": ["webpack", "sourcemap"],
     },
     reporters: ["mocha"],
     mochaReporter: {
@@ -38,19 +38,18 @@ module.exports = (config: KarmaConfig) => {
       bail: true,
       devtool: "source-map",
       resolve: {
-        extensions: ["", ".ts", ".tsx", ".js"]
+        extensions: ["", ".ts", ".tsx", ".js"],
       },
       module: {
         loaders: [
-          { test: /\.tsx?$/, loader: "ts-loader" }
-        ]
+          { test: /\.tsx?$/, loader: "ts-loader" },
+        ],
       },
       ts: {
         configFileName: require.resolve("./tsconfig.client.test.json"),
         logInfoToStdOut: true,
-        logLevel: logLevel.toLowerCase()
-      }
-    }
+        logLevel: logLevel.toLowerCase(),
+      },
+    },
   });
 }
-

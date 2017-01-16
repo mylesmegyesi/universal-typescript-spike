@@ -9,15 +9,15 @@ SERVER_SOURCE_FILES := '$(SOURCE_DIR)/server/**/*.ts' '$(SOURCE_DIR)/server/**/*
 CONFIG_FILES        := '$(CONFIG_DIR)/**/*'
 SOURCE_FILES        := '$(SOURCE_DIR)/**/*'
 
-NPM_BIN            := ./node_modules/.bin
-KARMA              := $(NPM_BIN)/karma
-WEBPACK            := $(NPM_BIN)/webpack
-TSC                := $(NPM_BIN)/tsc
-MOCHA              := $(NPM_BIN)/mocha
-ONCHANGE           := $(NPM_BIN)/onchange
-TSLINT             := $(NPM_BIN)/tslint
-CONCURRENTLY       := $(NPM_BIN)/concurrently
-WEBPACK_DEV_SERVER := $(NPM_BIN)/webpack-dev-server
+NPM_BIN      := ./node_modules/.bin
+KARMA        := $(NPM_BIN)/karma
+WEBPACK      := $(NPM_BIN)/webpack
+TSC          := $(NPM_BIN)/tsc
+MOCHA        := $(NPM_BIN)/mocha
+ONCHANGE     := $(NPM_BIN)/onchange
+TSLINT       := $(NPM_BIN)/tslint
+CONCURRENTLY := $(NPM_BIN)/concurrently
+TS_NODE      := $(NPM_BIN)/ts-node
 
 NODE_TS_CONFIG := $(CONFIG_DIR)/tsconfig.node.json
 
@@ -69,7 +69,7 @@ lint:
 
 .PHONY: devserver
 devserver:
-	TS_NODE_PROJECT=$(NODE_TS_CONFIG) $(ONCHANGE) $(SOURCE_FILES) $(CONFIG_FILES) --initial --wait --verbose --poll 100 -- $(WEBPACK_DEV_SERVER) --config $(CONFIG_DIR)/webpack.devserver.ts
+	TS_NODE_PROJECT=$(NODE_TS_CONFIG) $(ONCHANGE) $(SOURCE_FILES) $(CONFIG_FILES) --initial --verbose --poll 100 -- $(TS_NODE) ./config/devserver.ts
 
 .PHONY: clean
 clean:

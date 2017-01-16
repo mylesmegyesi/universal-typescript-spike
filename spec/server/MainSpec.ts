@@ -1,18 +1,21 @@
 import { expect } from "chai";
-import { parseArgs, isParseArgsResultFail, isParseArgsResultSuccess } from "../../src/server/Main";
+
+import { isUsageError, parseCommandLineArgs } from "../../src/server/Main";
 
 describe("Main", () => {
-  context("parseArgs", () => {
+  context("parseCommandLineArgs", () => {
     const validArgs: { [key: string]: string } = {
       "--port": "8080",
       "--bundlePath": "/path/to/bundle",
     };
 
-    function flatten(args: { [key: string]: string }) {
-      const flatArgs = [];
-      for(const prop in args) {
-        flatArgs.push(prop);
-        flatArgs.push(args[prop]);
+    function flatten(args: { [key: string]: string }): string[] {
+      const flatArgs: string[] = [];
+      for (const prop in args) {
+        if (args.hasOwnProperty(prop)) {
+          flatArgs.push(prop);
+          flatArgs.push(args[prop]);
+        }
       }
 
       return flatArgs;
@@ -21,44 +24,44 @@ describe("Main", () => {
     it(`parses port`, () => {
       const args = { ...validArgs, "--port": "9090" };
 
-      const result = parseArgs(flatten(args));
+      const result = parseCommandLineArgs(flatten(args));
 
-      if (isParseArgsResultSuccess(result)) {
-        expect(result.port).to.eql(9090);
-      } else {
+      if (isUsageError(result)) {
         expect("<success>").to.eql(result);
+      } else {
+        expect(result.port).to.eql(9090);
       }
     });
 
     it(`defaults when port is missing`, () => {
       const { "--port": _, ...args } = validArgs;
 
-      const result = parseArgs(flatten(args));
+      const result = parseCommandLineArgs(flatten(args));
 
-      if (isParseArgsResultSuccess(result)) {
-        expect(result.port).to.eql(8080);
-      } else {
+      if (isUsageError(result)) {
         expect("<success>").to.eql(result);
+      } else {
+        expect(result.port).to.eql(8080);
       }
     });
 
     it(`fails when port is not a number`, () => {
       const args = { ...validArgs, "--port": "not a number" };
 
-      const result = parseArgs(flatten(args));
+      const result = parseCommandLineArgs(flatten(args));
 
-      expect(isParseArgsResultFail(result)).to.be.true;
+      expect(isUsageError(result)).to.be.true;
     });
 
     it(`parses bundlePath`, () => {
       const args = { ...validArgs, "--bundlePath": "/new/path/to/bundle" };
 
-      const result = parseArgs(flatten(args));
+      const result = parseCommandLineArgs(flatten(args));
 
-      if (isParseArgsResultSuccess(result)) {
-        expect(result.bundlePath).to.eql("/new/path/to/bundle");
-      } else {
+      if (isUsageError(result)) {
         expect("<success>").to.eql(result);
+      } else {
+        expect(result.bundlePath).to.eql("/new/path/to/bundle");
       }
     });
   });

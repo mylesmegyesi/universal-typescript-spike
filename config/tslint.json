@@ -24,22 +24,22 @@
         ]
       }
     ],
-    "no-any": true,
+    "no-any": false,
     "no-inferrable-types": false,
     "no-internal-module": true,
     "no-namespace": [true, "allow-declarations"],
     "no-reference": true,
-    "no-var-requires": true,
+    "no-var-requires": false,
     "only-arrow-functions": [true, "allow-declarations"],
     "prefer-for-of": true,
     "typedef": [
       true,
       "call-signature",
-      "arrow-call-signature",
+      // "arrow-call-signature",
       "parameter",
-      "arrow-parameter",
+      // "arrow-parameter",
       "property-declaration",
-      "variable-declaration",
+      // "variable-declaration",
       "member-variable-declaration"
     ],
     "typedef-whitespace": [
@@ -79,12 +79,12 @@
     "no-invalid-this": [true, "check-function-in-method"],
     "no-null-keyword": false,
     "no-shadowed-variable": true,
-    "no-string-literal": true,
+    "no-string-literal": false,
     "no-switch-case-fall-through": true,
     "no-unsafe-finally": false,
     "no-unused-expression": true,
     "no-unused-new": true,
-    "no-unused-variable": [true, "react"],
+    "no-unused-variable": [true, "react", {"ignore-pattern": "^_"}],
     "no-use-before-declare": true,
     "no-var-keyword": true,
     "radix": true,
@@ -104,7 +104,7 @@
     "max-line-length": false,
     "no-default-export": true,
     "no-mergeable-namespace": true,
-    "no-require-imports": true,
+    "no-require-imports": false,
     "no-trailing-whitespace": true,
     "object-literal-sort-keys": false,
     "trailing-comma": [
@@ -121,7 +121,7 @@
     "align": [
       true,
       "parameters",
-      "arguments",
+      // "arguments",
       "statements"
     ],
     "array-type": [true, "array"],
@@ -137,7 +137,7 @@
     "no-consecutive-blank-lines": [true, 1],
     "no-parameter-properties": false,
     "object-literal-key-quotes": [true, "as-needed"],
-    "object-literal-shorthand": true,
+    "object-literal-shorthand": false,
     "one-line": [
       true,
       "check-open-brace",
@@ -159,7 +159,8 @@
       true,
       "check-format",
       "allow-leading-underscore",
-      "ban-keywords"
+      "ban-keywords",
+      "allow-pascal-case"
     ],
     "whitespace": [
       true,
