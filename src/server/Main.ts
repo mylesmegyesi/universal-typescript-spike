@@ -95,14 +95,14 @@ export async function startServer(app: Express.Application, port: number): Promi
   };
 }
 
-export type CommandLineArguements = {
+export type CommandLineArguments = {
   bundlePath: string;
   port: number;
 }
 
-export type CommandLineArguementsParseResult = CommandLineArguements | string;
+export type CommandLineArgumentsParseResult = CommandLineArguments | string;
 
-export function isUsageError(result: CommandLineArguementsParseResult): result is string {
+export function isUsageError(result: CommandLineArgumentsParseResult): result is string {
   return (typeof result === "string");
 }
 
@@ -113,7 +113,7 @@ Options:
                 manifest.json lives).
 `;
 
-export function parseCommandLineArgs(args: string[]): CommandLineArguementsParseResult {
+export function parseCommandLineArgs(args: string[]): CommandLineArgumentsParseResult {
   let errorMessages: string[] = [];
   const parsedArgs = minimist(args, {
     string: ["port", "bundlePath"],
@@ -124,27 +124,27 @@ export function parseCommandLineArgs(args: string[]): CommandLineArguementsParse
     "--": false,
   });
 
-  const validatedArguements: { [key: string]: any } = {};
+  const validatedArguments: { [key: string]: any } = {};
   const rawPort = parsedArgs["port"];
   const parsedPort: number = parseInt(rawPort, 10);
   if (isNaN(parsedPort)) {
     errorMessages.push("--port must be an integer");
   } else {
-    validatedArguements["port"] = parsedPort;
+    validatedArguments["port"] = parsedPort;
   }
 
   const bundlePath = parsedArgs["bundlePath"];
   if (!bundlePath) {
     errorMessages.push("--bundlePath is required");
   } else {
-    validatedArguements["bundlePath"] = bundlePath;
+    validatedArguments["bundlePath"] = bundlePath;
   }
 
   if (errorMessages.length > 0) {
     return `${errorMessages.join(os.EOL)}${os.EOL}${usage}`;
   }
 
-  return validatedArguements as CommandLineArguements;
+  return validatedArguments as CommandLineArguments;
 }
 
 async function listenForProcessSignal(_process: NodeJS.Process, signal: string): Promise<string> {

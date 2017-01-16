@@ -13,14 +13,14 @@ const webpackConfig: any = _webpackConfig;
 webpackConfig.debug = true;
 webpackConfig.output.path = "/";
 
-export type CommandLineArguements = {
+export type CommandLineArguments = {
   bundlePath: string;
   port: number;
 }
 
-export type CommandLineArguementsParseResult = CommandLineArguements | string;
+export type CommandLineArgumentsParseResult = CommandLineArguments | string;
 
-export function isUsageError(result: CommandLineArguementsParseResult): result is string {
+export function isUsageError(result: CommandLineArgumentsParseResult): result is string {
   return (typeof result === "string");
 }
 
@@ -29,7 +29,7 @@ Options:
   --port        Port to listen on. Default 8080.
 `;
 
-export function parseCommandLineArgs(args: string[]): CommandLineArguementsParseResult {
+export function parseCommandLineArgs(args: string[]): CommandLineArgumentsParseResult {
   let errorMessages: string[] = [];
   const parsedArgs = minimist(args, {
     string: ["port"],
@@ -40,20 +40,20 @@ export function parseCommandLineArgs(args: string[]): CommandLineArguementsParse
     "--": false,
   });
 
-  const validatedArguements: { [key: string]: any } = {};
+  const validatedArguments: { [key: string]: any } = {};
   const rawPort = parsedArgs["port"];
   const parsedPort: number = parseInt(rawPort, 10);
   if (isNaN(parsedPort)) {
     errorMessages.push("--port must be an integer");
   } else {
-    validatedArguements["port"] = parsedPort;
+    validatedArguments["port"] = parsedPort;
   }
 
   if (errorMessages.length > 0) {
     return `${errorMessages.join(os.EOL)}${os.EOL}${usage}`;
   }
 
-  return validatedArguements as CommandLineArguements;
+  return validatedArguments as CommandLineArguments;
 }
 
 function getClientManifest(compilation: any): ClientManifest {
@@ -84,7 +84,7 @@ async function buildClient(): Promise<[ClientManifest, Express.RequestHandler]> 
   });
 }
 
-async function buildAndRun(commandLineArgs: CommandLineArguements): Promise<void> {
+async function buildAndRun(commandLineArgs: CommandLineArguments): Promise<void> {
   const [manifest, assetsHandler] = await buildClient();
   console.log(manifest);
   await run({
