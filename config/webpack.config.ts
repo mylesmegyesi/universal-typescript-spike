@@ -1,6 +1,8 @@
 import * as path from "path";
-import * as webpack from "webpack";
+
 import * as ExtractTextPlugin from "extract-text-webpack-plugin";
+import * as webpack from "webpack";
+
 import { ClientManifest, MANIFEST_FILE_NAME } from "../src/server/ClientManifest";
 
 const root = path.join(__dirname, "..");
@@ -9,9 +11,9 @@ const CLIENT_MAIN_SCRIPT_BASE_NAME = "application";
 const CLIENT_MAIN_MODULE_NAME = "application";
 
 class ManifestPlugin {
-  constructor(private publicDirectoryPath: string) {}
+  public constructor(private publicDirectoryPath: string) {}
 
-  public apply(compiler: any) {
+  public apply(compiler: any): void {
     compiler.plugin("emit", (compilation: any, done: () => void) => {
       const mainScriptName = Object.keys(compilation.assets).find((filename) => {
         return filename.startsWith(CLIENT_MAIN_SCRIPT_BASE_NAME) && path.extname(filename) === ".js";
@@ -28,7 +30,6 @@ class ManifestPlugin {
       if (!mainCssName) {
         throw new Error(`Could not find main css: ${CLIENT_MAIN_SCRIPT_BASE_NAME}`);
       }
-
 
       const manifest: ClientManifest = {
         mainScriptName: mainScriptName,
@@ -49,7 +50,7 @@ class ManifestPlugin {
 
       compilation.assets[MANIFEST_FILE_NAME] = {
         source: () => manifestJson,
-          size: () => manifestJson.length
+          size: () => manifestJson.length,
       };
 
       done();
@@ -59,7 +60,7 @@ class ManifestPlugin {
 
 const env = process.env["NODE_ENV"] || "development";
 
-function buildFileName(name: string, ext: string) {
+function buildFileName(name: string, ext: string): string {
   if (env === "development") {
     return `${name}.${ext}`;
   }
@@ -67,13 +68,13 @@ function buildFileName(name: string, ext: string) {
   return `${name}-[hash].${ext}`;
 }
 
-function buildPluginList() {
+function buildPluginList(): webpack.Plugin[] {
   const plugins = [
     new webpack.DefinePlugin({
       "process.env": {
         // This has effect on the react lib size
-        "NODE_ENV": JSON.stringify(env)
-      }
+        NODE_ENV: JSON.stringify(env),
+      },
     }),
   ];
 
@@ -103,12 +104,12 @@ module.exports = {
     loaders: [
       { test: /\.tsx?$/, loader: "ts-loader" },
       { test: /\.scss$/,
-        loader: (ExtractTextPlugin as any).extract('style-loader?sourceMap', 'css-loader?sourceMap!sass-loader?sourceMap')
+        loader: (ExtractTextPlugin as any).extract("style-loader?sourceMap", "css-loader?sourceMap!sass-loader?sourceMap"),
       },
       {
         test: /\.(png|woff|woff2|eot|ttf|svg)$/,
         loader: `url-loader?limit=100000&name=${buildFileName("[name]", "[ext]")}`,
-      }
+      },
     ],
   },
   output: {
@@ -119,7 +120,6 @@ module.exports = {
   ts: {
     configFileName: require.resolve("./tsconfig.client.json"),
     logInfoToStdOut: true,
-    logLevel: "error"
-  }
+    logLevel: "error",
+  },
 };
-

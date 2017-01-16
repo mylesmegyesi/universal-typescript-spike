@@ -1,7 +1,6 @@
 import { ApplicationProps } from "./Application";
 
 export type ClientConfig = {
-  applicationContainerId: string;
-  applicationProps: ApplicationProps;
+  applicationContainerId: string,
+  applicationProps: ApplicationProps,
 }
-

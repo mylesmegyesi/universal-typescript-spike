@@ -1,5 +1,6 @@
 import { expect } from "chai";
-import { parseCommandLineArgs, isUsageError } from "../../src/server/Main";
+
+import { isUsageError, parseCommandLineArgs } from "../../src/server/Main";
 
 describe("Main", () => {
   context("parseCommandLineArgs", () => {
@@ -8,11 +9,13 @@ describe("Main", () => {
       "--bundlePath": "/path/to/bundle",
     };
 
-    function flatten(args: { [key: string]: string }) {
-      const flatArgs = [];
-      for(const prop in args) {
-        flatArgs.push(prop);
-        flatArgs.push(args[prop]);
+    function flatten(args: { [key: string]: string }): string[] {
+      const flatArgs: string[] = [];
+      for (const prop in args) {
+        if (args.hasOwnProperty(prop)) {
+          flatArgs.push(prop);
+          flatArgs.push(args[prop]);
+        }
       }
 
       return flatArgs;
@@ -63,4 +66,3 @@ describe("Main", () => {
     });
   });
 });
-

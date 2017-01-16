@@ -3,11 +3,10 @@ import * as os from "os";
 import * as Express from "express";
 import * as minimist from "minimist";
 import * as webpack from "webpack";
-/// <reference path="./webpackDevMiddleware.d.ts"/>
-import webpackDevMiddleware = require("webpack-dev-middleware");
+import * as webpackDevMiddleware from "webpack-dev-middleware";
 
-import { run } from "../src/server/Main";
 import { ClientManifest, MANIFEST_FILE_NAME, parseManifest } from "../src/server/ClientManifest";
+import { run } from "../src/server/Main";
 import _webpackConfig = require("./webpack.config");
 
 const webpackConfig: any = _webpackConfig;
@@ -35,7 +34,7 @@ export function parseCommandLineArgs(args: string[]): CommandLineArguementsParse
   const parsedArgs = minimist(args, {
     string: ["port"],
     default: {
-      "port": "8080",
+      port: "8080",
     },
     stopEarly: false,
     "--": false,
@@ -63,7 +62,7 @@ function getClientManifest(compilation: any): ClientManifest {
 
 async function buildClient(): Promise<[ClientManifest, Express.RequestHandler]> {
   const compiler = webpack(webpackConfig);
-  const middleware = webpackDevMiddleware(compiler, {
+  const middlewareOptions: any = {
     hot: false,
     historyApiFallback: false,
     compress: false,
@@ -75,7 +74,8 @@ async function buildClient(): Promise<[ClientManifest, Express.RequestHandler]> 
     stats: "minimal",
     inline: false,
     publicPath: "/",
-  });
+  };
+  const middleware = webpackDevMiddleware(compiler, middlewareOptions);
 
   return new Promise<[ClientManifest, Express.RequestHandler]>((resolve, reject) => {
     middleware.waitUntilValid((stats: any) => {
@@ -105,7 +105,7 @@ async function main(args: string[]): Promise<number> {
       await buildAndRun(result);
       return 0;
     }
-  } catch(e) {
+  } catch (e) {
     console.error(e);
     return 1;
   }
@@ -114,4 +114,3 @@ async function main(args: string[]): Promise<number> {
 if (require.main === module) {
   main(process.argv).then((exitCode) => process.exit(exitCode));
 }
-

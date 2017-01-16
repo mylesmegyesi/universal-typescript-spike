@@ -1,6 +1,6 @@
 import * as Express from "express";
 import * as React from "react";
-import { renderToString, renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup, renderToString } from "react-dom/server";
 
 import { Application, ApplicationProps } from "../common/Application";
 import { ClientConfig } from "../common/ClientConfig";
@@ -59,4 +59,3 @@ export function buildApplicationWebPageMiddleware(config: ApplicationWebPageMidd
     response.send(`<!DOCTYPE html>${renderToStaticMarkup(webPageElement)}`);
   };
 }
-

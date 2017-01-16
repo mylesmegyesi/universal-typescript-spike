@@ -10,24 +10,24 @@ export type ClientManifest = {
   publicDirectoryPath: string;
 }
 
-const clientManifestJsonSchema = {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "mainScriptName": {
-      "type": "string",
+const clientManifestJsonSchema: jsonschema.Schema = {
+  $schema: "http://json-schema.org/draft-04/schema#",
+  type: "object",
+  properties: {
+    mainScriptName: {
+      type: "string",
     },
-    "mainCssName": {
-      "type": "string",
+    mainCssName: {
+      type: "string",
     },
-    "scriptOnLoadCallback": {
-      "type": "string",
+    scriptOnLoadCallback: {
+      type: "string",
     },
-    "publicDirectoryPath": {
-      "type": "string",
-    }
+    publicDirectoryPath: {
+      type: "string",
+    },
   },
-  "required": [
+  required: [
     "mainScriptName",
     "mainCssName",
     "scriptOnLoadCallback",

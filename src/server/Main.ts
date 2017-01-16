@@ -1,13 +1,11 @@
 import * as http from "http";
-import * as path from "path";
-import * as url from "url";
 import * as os from "os";
+import * as url from "url";
 
 import * as Express from "express";
 import * as minimist from "minimist";
-import * as moment from "moment";
 
-import { buildApplicationWebPageMiddleware } from "./ApplicationWebPage";
+import { ApplicationWebPageMiddlewareConfig, buildApplicationWebPageMiddleware } from "./ApplicationWebPage";
 import { BasicRequestInfo } from "./BasicRequestInfo";
 import { ClientManifest, readManifest } from "./ClientManifest";
 
@@ -21,7 +19,7 @@ export type ApplicationConfig = {
   clientAssetsHostUrl?: (req: BasicRequestInfo) => string;
 }
 
-export function buildApplicationWebPageMiddlewareConfig(config: ApplicationConfig) {
+export function buildApplicationWebPageMiddlewareConfig(config: ApplicationConfig): ApplicationWebPageMiddlewareConfig {
   const getClientAssetHostUrlFn = () => {
     if (config.clientAssetsHostUrl) {
       return config.clientAssetsHostUrl;
@@ -35,7 +33,6 @@ export function buildApplicationWebPageMiddlewareConfig(config: ApplicationConfi
   };
 
   const clientAssetsHostUrl = getClientAssetHostUrlFn();
-  const manifest = config.manifest;
 
   return {
     manifest: config.manifest,
@@ -121,7 +118,7 @@ export function parseCommandLineArgs(args: string[]): CommandLineArguementsParse
   const parsedArgs = minimist(args, {
     string: ["port", "bundlePath"],
     default: {
-      "port": "8080",
+      port: "8080",
     },
     stopEarly: false,
     "--": false,
@@ -164,7 +161,7 @@ export async function run(config: ApplicationConfig, port: number): Promise<void
 
   const receivedSignal = await Promise.race([
     listenForProcessSignal(process, "SIGINT"),
-    listenForProcessSignal(process, "SIGTERM")
+    listenForProcessSignal(process, "SIGTERM"),
   ]);
 
   const shutdownPromise = runningServer.shutdown();
@@ -194,7 +191,7 @@ export async function main(args: string[]): Promise<number> {
 
       return 0;
     }
-  } catch(e) {
+  } catch (e) {
     console.error(e);
     return 1;
   }
@@ -203,4 +200,3 @@ export async function main(args: string[]): Promise<number> {
 if (require.main === module) {
   main(process.argv).then((exitCode) => process.exit(exitCode));
 }
-
