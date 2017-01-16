@@ -23,7 +23,7 @@ NODE_TS_CONFIG := $(CONFIG_DIR)/tsconfig.node.json
 
 .PHONY: client-build
 client-build:
-	TS_NODE_PROJECT=$(NODE_TS_CONFIG) $(WEBPACK) --config $(CONFIG_DIR)/webpack.build.ts --output-path $(CLIENT_OUT_DIR)
+	NODE_ENV=production TS_NODE_PROJECT=$(NODE_TS_CONFIG) $(WEBPACK) --config $(CONFIG_DIR)/webpack.config.ts --output-path $(CLIENT_OUT_DIR)
 
 .PHONY: client-test
 client-test:
