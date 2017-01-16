@@ -2,6 +2,7 @@ import { setInterval } from "timers";
 import * as React from "react";
 
 export type ApplicationProps = {
+  pageTitle: string;
   postfix: string;
   count: number;
 }

@@ -6,9 +6,11 @@ import { ClientConfig } from "../common/ClientConfig";
 
 require('./stylesheets/main.scss');
 
-export function main(config: ClientConfig) {
+function main(config: ClientConfig) {
   render(
     createElement(Application, config.applicationProps),
     document.getElementById(config.applicationContainerId)
   );
 }
+
+module.exports = main;

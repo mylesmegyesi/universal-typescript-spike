@@ -1,91 +1,54 @@
 import * as http from "http";
-import * as fs from "fs";
 import * as path from "path";
 import * as url from "url";
 import * as os from "os";
 
 import * as Express from "express";
-import * as jsonschema from "jsonschema";
 import * as minimist from "minimist";
+import * as moment from "moment";
 
 import { buildApplicationWebPageMiddleware } from "./ApplicationWebPage";
-
-export function buildOriginClientAssetBaseUrl(req: Express.Request, assetsMountPath: string): string {
-  const host = `${req.protocol}://${req.headers["host"]}/`;
-  const serverBaseUrl = url.resolve(host, req.baseUrl + "/");
-  return url.resolve(serverBaseUrl, assetsMountPath);
-}
-
-export type ClientManifest = {
-  mainScriptName: string;
-  mainCssName: string;
-  clientMainModuleName: string;
-  publicDirectoryPath: string;
-}
-
-const clientManifestJsonSchema = {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-  	"mainScriptName": {
-  		"type": "string",
-    },
-    "mainCssName": {
-  		"type": "string",
-  	},
-  	"clientMainModuleName": {
-  		"type": "string",
-  	},
-  	"publicDirectoryPath": {
-  		"type": "string",
-  	}
-  },
-  "required": [
-  	"mainScriptName",
-    "mainCssName",
-  	"clientMainModuleName",
-  	"publicDirectoryPath",
-  ],
-};
-
-function readFileAsync(path: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    fs.readFile(path, { encoding: "utf8", flag: "r" }, (err, content) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(content);
-      }
-    });
-  });
-}
-
-async function readManifest(bundle: string) {
-  const manifestPath = path.join(bundle, "manifest.json");
-  const rawManifest = await readFileAsync(manifestPath);
-  const parsedManifest = JSON.parse(rawManifest);
-
-  const validationResult = jsonschema.validate(parsedManifest, clientManifestJsonSchema)
-
-  if (validationResult.valid) {
-    return {
-      mainScriptName: parsedManifest["mainScriptName"],
-      mainCssName: parsedManifest["mainCssName"],
-      clientMainModuleName: parsedManifest["clientMainModuleName"],
-      publicDirectoryPath: parsedManifest["publicDirectoryPath"],
-    };
-  } else {
-    const errors = validationResult.errors.map((e) => `  * ${e.property} ${e.message}`).join("\n");
-    const errorMessage = `Manifest is invalid -> ${manifestPath}\n${errors}`;
-    throw new Error(errorMessage);
-  }
-}
+import { BasicRequestInfo } from "./BasicRequestInfo";
+import { ClientManifest, readManifest } from "./ClientManifest";
 
 const ASSETS_MOUNT_PATH = "/assets/"
 
-function buildApplication(manifest: ClientManifest, bundlePath: string, assetsMountPath: string = ASSETS_MOUNT_PATH): Express.Application {
+export type ApplicationConfig = {
+  https: boolean;
+  manifest: ClientManifest;
+  assetsMountPath: string;
+  assetsHandler: Express.RequestHandler;
+  clientAssetsHostUrl?: (req: BasicRequestInfo) => string;
+}
+
+export function buildApplicationWebPageMiddlewareConfig(config: ApplicationConfig) {
+  const getClientAssetHostUrlFn = () => {
+    if (config.clientAssetsHostUrl) {
+      return config.clientAssetsHostUrl;
+    }
+
+    return (req: BasicRequestInfo) => {
+      const host = `${req.protocol}://${req.headers["host"]}/`;
+      const basePath = req.baseUrl + "/";
+      return url.resolve(host, basePath);
+    };
+  };
+
+  const clientAssetsHostUrl = getClientAssetHostUrlFn();
+  const manifest = config.manifest;
+
+  return {
+    manifest: config.manifest,
+    clientAssetsBaseUrl: (req: Express.Request) => {
+      return url.resolve(clientAssetsHostUrl(req), config.assetsMountPath);
+    },
+  };
+}
+
+function buildApplication(config: ApplicationConfig): Express.Application {
   const app = Express();
   app.disable("x-powered-by");
+  app.enable("trust proxy");
 
   app.use((req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
     // Disable HTTP persistent connections until we need them.
@@ -95,14 +58,10 @@ function buildApplication(manifest: ClientManifest, bundlePath: string, assetsMo
     next();
   });
 
-  app.use(assetsMountPath, Express.static(path.join(bundlePath, manifest.publicDirectoryPath)));
+  app.use(config.assetsMountPath, config.assetsHandler);
 
-  app.use(buildApplicationWebPageMiddleware({
-    mainScriptName: manifest.mainScriptName,
-    mainCssName: manifest.mainCssName,
-    clientMainModuleName: manifest.clientMainModuleName,
-    clientAssetsBaseUrl: (req) => buildOriginClientAssetBaseUrl(req, assetsMountPath),
-  }));
+  const webPageMiddlewareConfig = buildApplicationWebPageMiddlewareConfig(config);
+  app.use(buildApplicationWebPageMiddleware(webPageMiddlewareConfig));
 
   return app;
 }
@@ -139,18 +98,14 @@ export async function startServer(app: Express.Application, port: number): Promi
   };
 }
 
-export type ServerConfig = {
+export type CommandLineArguements = {
   bundlePath: string;
   port: number;
 }
 
-export type ParsedArgsResult = ServerConfig | string;
+export type CommandLineArguementsParseResult = CommandLineArguements | string;
 
-export function isParseArgsResultSuccess(result: ParsedArgsResult): result is ServerConfig {
-  return (typeof result === "object");
-}
-
-export function isParseArgsResultFail(result: ParsedArgsResult): result is string {
+export function isUsageError(result: CommandLineArguementsParseResult): result is string {
   return (typeof result === "string");
 }
 
@@ -161,7 +116,7 @@ Options:
                 manifest.json lives).
 `;
 
-export function parseArgs(args: string[]): ParsedArgsResult {
+export function parseCommandLineArgs(args: string[]): CommandLineArguementsParseResult {
   let errorMessages: string[] = [];
   const parsedArgs = minimist(args, {
     string: ["port", "bundlePath"],
@@ -172,27 +127,27 @@ export function parseArgs(args: string[]): ParsedArgsResult {
     "--": false,
   });
 
-  const serverConfig: { [key: string]: any } = {};
+  const validatedArguements: { [key: string]: any } = {};
   const rawPort = parsedArgs["port"];
   const parsedPort: number = parseInt(rawPort, 10);
   if (isNaN(parsedPort)) {
     errorMessages.push("--port must be an integer");
   } else {
-    serverConfig["port"] = parsedPort;
+    validatedArguements["port"] = parsedPort;
   }
 
   const bundlePath = parsedArgs["bundlePath"];
   if (!bundlePath) {
     errorMessages.push("--bundlePath is required");
   } else {
-    serverConfig["bundlePath"] = bundlePath;
+    validatedArguements["bundlePath"] = bundlePath;
   }
 
   if (errorMessages.length > 0) {
     return `${errorMessages.join(os.EOL)}${os.EOL}${usage}`;
   }
 
-  return serverConfig as ServerConfig;
+  return validatedArguements as CommandLineArguements;
 }
 
 async function listenForProcessSignal(_process: NodeJS.Process, signal: string): Promise<string> {
@@ -201,11 +156,9 @@ async function listenForProcessSignal(_process: NodeJS.Process, signal: string):
   });
 }
 
-export async function run(config: ServerConfig): Promise<void> {
-  const manifest = await readManifest(config.bundlePath);
-  const app = buildApplication(manifest, config.bundlePath);
-
-  const runningServer = await startServer(app, config.port);
+export async function run(config: ApplicationConfig, port: number): Promise<void> {
+  const app = buildApplication(config);
+  const runningServer = await startServer(app, port);
 
   console.log(`Server started; Port=${runningServer.port} PID=${process.pid}`);
 
@@ -225,13 +178,21 @@ export async function run(config: ServerConfig): Promise<void> {
 
 export async function main(args: string[]): Promise<number> {
   try {
-    const result = parseArgs(args);
-    if (isParseArgsResultSuccess(result)) {
-      await run(result);
-      return 0;
-    } else {
+    const result = parseCommandLineArgs(args);
+    if (isUsageError(result)) {
       console.error(result);
       return 1;
+    } else {
+      const manifest = await readManifest(result.bundlePath);
+
+      await run({
+        https: false,
+        manifest: manifest,
+        assetsMountPath: ASSETS_MOUNT_PATH,
+        assetsHandler: Express.static(manifest.publicDirectoryPath),
+      }, result.port);
+
+      return 0;
     }
   } catch(e) {
     console.error(e);
@@ -242,3 +203,4 @@ export async function main(args: string[]): Promise<number> {
 if (require.main === module) {
   main(process.argv).then((exitCode) => process.exit(exitCode));
 }
+

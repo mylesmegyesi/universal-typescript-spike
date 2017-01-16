@@ -13,7 +13,7 @@ module.exports = (config: KarmaConfig) => {
   const logLevel = "error";
   config.set({
     basePath: root,
-    failOnEmptyTestSuite: true,
+    failOnEmptyTestSuite: false,
     browsers: ["PhantomJS"],
     logLevel: logLevel,
     files: [
