@@ -5,7 +5,7 @@ SOURCE_DIR          := ./src
 CLIENT_OUT_DIR      := $(OUT_DIR)/bundle
 SERVER_OUT_DIR      := $(OUT_DIR)/src
 SERVER_TEST_FILES   := '$(TEST_DIR)/server/**/*.ts' '$(TEST_DIR)/server/**/*.tsx $(TEST_DIR)/common/**/*.ts' '$(TEST_DIR)/common/**/*.tsx'
-SERVER_SOURCE_FILES := '$(SOURCE_DIR)/server/**/*.ts' '$(SOURCE_DIR)/server/**/*.tsx $(SOURCE_DIR)/common/**/*.ts' '$(SOURCE_DIR)/common/**/*.tsx'
+SERVER_SOURCE_FILES := '$(SOURCE_DIR)/server/**/*.ts' '$(SOURCE_DIR)/server/**/*.tsx' '$(SOURCE_DIR)/common/**/*.ts' '$(SOURCE_DIR)/common/**/*.tsx'
 CONFIG_FILES        := '$(CONFIG_DIR)/**/*'
 SOURCE_FILES        := '$(SOURCE_DIR)/**/*'
 
